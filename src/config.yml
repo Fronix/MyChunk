@@ -1,0 +1,13 @@
+# MyChunk
+# by ellbristow
+# 
+# Configuration File
+# 
+# = Configuration Options =
+# 
+# chunk_price : How much does a chunk cost to claim? (Default = 0.00)
+# 
+# unclaim_refund : Do players get a refund when they unclaim a chunk? true|false (Default = false)
+
+chunk_price: 0.00
+unclaim_refund: false

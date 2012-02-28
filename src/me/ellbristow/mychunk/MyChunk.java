@@ -1,0 +1,161 @@
+package me.ellbristow.mychunk;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class MyChunk extends JavaPlugin {
+
+    private static MyChunk plugin;
+    private static Logger logger;
+    private File chunkFile;
+    public FileConfiguration chunkStore;
+    public Integer claimedChunks;
+    public FileConfiguration config;
+    public boolean foundVault = false;
+    public boolean foundEconomy = false;
+    public boolean unclaimRefund = false;
+    public double chunkPrice = 0.00;
+    public MyChunkVaultLink vault;
+    
+    @Override
+    public void onEnable() {
+        plugin = this;
+        logger = getLogger();
+        chunkStore = getChunkStore();
+        getServer().getPluginManager().registerEvents(new MyChunkListener(plugin), plugin);
+        claimedChunks = chunkStore.getInt("TotalOwned", 0);
+        chunkStore.set("TotalOwned", claimedChunks);
+        saveChunkStore();
+        config = getConfig();
+        if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+            foundVault = true;
+            vault = new MyChunkVaultLink(this);
+            vault.initEconomy();
+            logger.info("[Vault] found and hooked!");
+            if (vault.foundEconomy) {
+                foundEconomy = true;
+                logger.info("[" + vault.economyName + "] found and hooked!");
+                chunkPrice = config.getDouble("chunk_price", 0.00);
+                config.set("chunk_price", chunkPrice);
+                unclaimRefund = config.getBoolean("unclaim_refund", false);
+                config.set("unclaim_refund", unclaimRefund);
+                saveConfig();
+            } else {
+                logger.info("No economy plugin found! Chunks will be free");
+            }
+        } else {
+            logger.info("Vault not found! Chunks will be free");
+        }
+    }
+    
+    @Override
+    public void onDisable() {
+        
+    }
+    
+    @Override
+    public boolean onCommand (CommandSender sender, Command cmd, String commandLabel, String[] args) {
+        if (args.length == 0) {
+            if (sender.hasPermission("mychunk.commands.stats")) {
+                PluginDescriptionFile pdfFile = getDescription();
+                sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " by " + ChatColor.WHITE + "ellbristow");
+                sender.sendMessage("============================");
+                sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
+                if (foundEconomy) {
+                    sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
+                    String paid = "No";
+                    if (unclaimRefund) {
+                        paid = "Yes";
+                    }
+                    sender.sendMessage(ChatColor.GOLD + "Unclaim Refunds: " + ChatColor.WHITE + paid);
+                }
+                return true;
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+            }
+        } else if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("price")) {
+                if (sender.hasPermission("mychunk.commands.price")) {
+                    if (!foundEconomy) {
+                        sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
+                        return false;
+                    } else {
+                        double newPrice = chunkPrice;
+                        try {
+                            newPrice = Double.parseDouble(args[1]);
+                        } catch (NumberFormatException e) {
+                            sender.sendMessage(ChatColor.RED + "Amount must be a number! (e.g. 5.00)");
+                            sender.sendMessage(ChatColor.RED + "/mychunk price {new_price}");
+                            return false;
+                        }
+                        config.set("chunk_price", newPrice);
+                        saveConfig();
+                        sender.sendMessage(ChatColor.GOLD + "Chunk price set to " + vault.economy.format(newPrice));
+                        return true;
+                    }
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    return false;
+                }
+            } else if (args[0].equalsIgnoreCase("toggle")) {
+                if (args[1].equalsIgnoreCase("refund")) {
+                    if (sender.hasPermission("mychunk.commands.toggle.refund")) {
+                        if (!foundEconomy) {
+                            sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
+                            return false;
+                        } else {
+                            if (unclaimRefund) {
+                                unclaimRefund = false;
+                                sender.sendMessage(ChatColor.GOLD + "Unclaiming chunks now DOES NOT provide a refund.");
+                            } else {
+                                unclaimRefund = true;
+                                sender.sendMessage(ChatColor.GOLD + "Unclaiming chunks now provides a refund.");
+                            }
+                            config.set("unclaim_refund", unclaimRefund);
+                            saveConfig();
+                            return true;
+                        }
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        return false;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    protected void loadChunkStore() {
+        if (chunkFile == null) {
+            chunkFile = new File(getDataFolder(),"chunks.yml");
+        }
+        chunkStore = YamlConfiguration.loadConfiguration(chunkFile);
+    }
+	
+    protected FileConfiguration getChunkStore() {
+        if (chunkStore == null) {
+            loadChunkStore();
+        }
+        return chunkStore;
+    }
+	
+    protected void saveChunkStore() {
+        if (chunkStore == null || chunkFile == null) {
+            return;
+        }
+        try {
+            chunkStore.save(chunkFile);
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "Could not save " + chunkFile, ex );
+        }
+    }    
+}

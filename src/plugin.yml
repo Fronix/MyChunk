@@ -1,0 +1,97 @@
+name: MyChunk
+main: me.ellbristow.mychunk.MyChunk
+version: 0.0.1
+author: ellbristow
+description: >
+             Buy/Sell chunks for currency, get protection, make profit.
+softdepend: [Vault]
+
+commands:
+  mychunk:
+    description: Main (and only) command
+
+permissions:
+
+# Admin Permissions
+  mychunk.*:
+    description: Admin permission for total access
+    children:
+      mychunk.commands.*: true
+      mychunk.claim.*: true
+      mychunk.server.*: true
+      mychunk.unclaim.*: true
+
+# Command Permissions
+  mychunk.commands.*:
+    description: Access to all MyChunk commands
+    children:
+      mychunk.commands.stats: true
+      mychunk.commands.price: true
+  mychunk.commands.price:
+    description: Access to command /mychunk price
+    default: op
+  mychunk.commands.stats:
+    description: Access to command /mychunk
+    default: op
+  mychunk.commands.toggle.*:
+    description: Access to all commands starting with /mychunk toggle
+    default: op
+    children:
+      mychunk.commands.toggle.refund: true
+  mychunk.commands.toggle.refund:
+    description: Access to command /mychunk toggle refund
+    default: op
+
+# Claim Permissions
+  mychunk.claim.*:
+    description: Can claim chunks for self/server/others
+    default: op
+    children:
+       mychunk.claim: true
+       mychunk.claim.others: true
+       mychunk.claim.server: true
+  mychunk.claim:
+    description: Can claim chunks
+    default: op
+  mychunk.claim.others:
+    description: Can claim chunks for other players
+    default: op
+  mychunk.claim.server:
+    description: Can claim chunks for the server
+    default: op
+
+# Server Permissions
+  mychunk.server.*:
+    description: Can build/destroy/use in server owned chunks.
+    default: op
+    children:
+      mychunk.server.build: true
+      mychunk.server.destroy: true
+      mychunk.server.ignite: true
+      mychunk.server.use: true
+  mychunk.server.build:
+    description: Can build in server owned chunks
+    default: op
+  mychunk.server.destroy:
+    description: Can destroy blocks in server owned chunks
+    default: op
+  mychunk.server.ignite:
+    description: Can use explosives and Flint & Steel in server owned chunks
+    default: op
+  mychunk.server.use:
+    description: Can use levers, buttons etc in server owned chunks
+    default: op
+
+# Unclaim Permissions
+  mychunk.unclaim.*:
+    description: Can unclaim chunks for others/server
+    default: op
+    children:
+      mychunk.unclaim.others: true
+      mychunk.unclaim.server: true
+  mychunk.unclaim.others:
+    description: Can unclaim chunks for other players
+    default: op
+  mychunk.unclaim.server:
+    description: Can unclaim chunks for other players
+    default: op
