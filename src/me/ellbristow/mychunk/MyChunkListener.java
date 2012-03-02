@@ -1,10 +1,7 @@
 package me.ellbristow.mychunk;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -14,7 +11,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
-import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -27,24 +23,6 @@ public class MyChunkListener implements Listener {
         plugin = instance;
     }
 
-    @EventHandler (priority = EventPriority.NORMAL)
-    public void onBlockExplode (EntityExplodeEvent event) {
-        List<Block> blocks = event.blockList();
-        int index = 0;
-        Collection<Block> saveBlocks = new HashSet<Block>();
-        for (Iterator<Block> it = blocks.iterator(); it.hasNext();) {
-            Block block = it.next();
-            MyChunkChunk chunk = new MyChunkChunk(block, plugin);
-            if (chunk.isClaimed()) {
-                saveBlocks.add(block);
-            }
-            index++;
-        }
-        if (!saveBlocks.isEmpty()) {
-                event.blockList().removeAll(saveBlocks);
-        }
-    }
-    
     @EventHandler (priority = EventPriority.NORMAL)
     public void onBlockPlace (BlockPlaceEvent event) {
         if (!event.isCancelled()) {
@@ -210,7 +188,6 @@ public class MyChunkListener implements Listener {
                 } else {
                     String line1 = event.getLine(1);
                     if (line1.equals("") || line1.equals(player.getName())) {
-                        //TODO: Limit maximum number of owned plots
                         chunk.claim(player.getName());
                         player.sendMessage(ChatColor.GOLD + "Chunk claimed!");
                         if (plugin.foundEconomy && plugin.chunkPrice != 0) {
