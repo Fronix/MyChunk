@@ -1,7 +1,10 @@
 package me.ellbristow.mychunk;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -11,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -23,6 +27,28 @@ public class MyChunkListener implements Listener {
         plugin = instance;
     }
 
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onExplosion (EntityExplodeEvent event) {
+        if (!event.isCancelled()) {
+            List<Block> blocks = event.blockList();
+            if (blocks != null) {
+                int index = 0;
+                Collection<Block> saveBanks = new HashSet<Block>();
+                for (Iterator<Block> it = blocks.iterator(); it.hasNext();) {
+                    Block block = it.next();
+                    MyChunkChunk chunk = new MyChunkChunk(block, plugin);
+                    if (chunk.isClaimed()) {
+                        saveBanks.add(block);
+                    }
+                    index++;
+                }
+                if (!saveBanks.isEmpty()) {
+                    event.blockList().removeAll(saveBanks);
+                }
+            }
+        }
+    }
+    
     @EventHandler (priority = EventPriority.NORMAL)
     public void onBlockPlace (BlockPlaceEvent event) {
         if (!event.isCancelled()) {
