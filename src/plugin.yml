@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 0.0.2a
+version: 0.0.3a
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -18,8 +18,13 @@ permissions:
     children:
       mychunk.commands.*: true
       mychunk.claim.*: true
+      mychunk.free: true
       mychunk.server.*: true
       mychunk.unclaim.*: true
+  
+  mychunk.free:
+    description: Player does not pay to claim chunks
+    default: op
 
 # Command Permissions
   mychunk.commands.*:
@@ -50,11 +55,19 @@ permissions:
        mychunk.claim: true
        mychunk.claim.others: true
        mychunk.claim.server: true
+       mychunk.claim.unlimited: true
+       mychunk.claim.others.unlimited: true
   mychunk.claim:
     description: Can claim chunks
     default: op
+  mychunk.claim.unlimited:
+    description: Can ignore max chunk limit when claiming for self
+    default: op
   mychunk.claim.others:
     description: Can claim chunks for other players
+    default: op
+  mychunk.claim.others.unlimited:
+    description: Can ignore max chunk limit when claiming for others
     default: op
   mychunk.claim.server:
     description: Can claim chunks for the server

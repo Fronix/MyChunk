@@ -8,6 +8,9 @@
 # chunk_price : How much does a chunk cost to claim? (Default = 0.00)
 # 
 # unclaim_refund : Do players get a refund when they unclaim a chunk? true|false (Default = false)
+# 
+# max_chunks: What is the maximum number of chunks a player can claim (excluding server) 0 = Unlimited
 
 chunk_price: 0.00
 unclaim_refund: false
+max_chunks: 8

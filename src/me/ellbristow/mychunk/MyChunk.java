@@ -2,6 +2,7 @@ package me.ellbristow.mychunk;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
@@ -9,6 +10,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -24,6 +26,7 @@ public class MyChunk extends JavaPlugin {
     public boolean foundEconomy = false;
     public boolean unclaimRefund = false;
     public double chunkPrice = 0.00;
+    public int maxChunks = 8;
     public MyChunkVaultLink vault;
     
     @Override
@@ -46,6 +49,8 @@ public class MyChunk extends JavaPlugin {
                 logger.info("[" + vault.economyName + "] found and hooked!");
                 chunkPrice = config.getDouble("chunk_price", 0.00);
                 config.set("chunk_price", chunkPrice);
+                maxChunks = config.getInt("max_chunks", 8);
+                config.set("max_chunks", maxChunks);
                 unclaimRefund = config.getBoolean("unclaim_refund", false);
                 config.set("unclaim_refund", unclaimRefund);
                 saveConfig();
@@ -69,7 +74,11 @@ public class MyChunk extends JavaPlugin {
                 PluginDescriptionFile pdfFile = getDescription();
                 sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " by " + ChatColor.WHITE + "ellbristow");
                 sender.sendMessage("============================");
+                if (sender instanceof Player) {
+                    sender.sendMessage("Chunks You Own: " + ownedChunks(sender.getName()));
+                }
                 sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
+                sender.sendMessage("Maxiumum chunks per player: " + maxChunks);
                 if (foundEconomy) {
                     sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
                     String paid = "No";
@@ -78,6 +87,7 @@ public class MyChunk extends JavaPlugin {
                     }
                     sender.sendMessage(ChatColor.GOLD + "Unclaim Refunds: " + ChatColor.WHITE + paid);
                 }
+                
                 return true;
             } else {
                 sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
@@ -132,6 +142,18 @@ public class MyChunk extends JavaPlugin {
             }
         }
         return false;
+    }
+    
+    public int ownedChunks(String playerName) {
+        int owned = 0;
+        Set<String> allChunks = plugin.chunkStore.getKeys(true);
+        for (int i = 1; i < allChunks.size(); i++) {
+            String thisOwner = plugin.chunkStore.getString(allChunks.iterator().next() + ".owner");
+            if (playerName.equals(thisOwner)) {
+                owned++;
+            }
+        }
+        return owned;
     }
     
     protected void loadChunkStore() {
