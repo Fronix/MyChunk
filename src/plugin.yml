@@ -1,10 +1,10 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 0.0.3a
+version: 0.1.0
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
-softdepend: [Vault]
+softdepend: [Vault,MyWorlds,Multiverse]
 
 commands:
   mychunk:
@@ -34,6 +34,9 @@ permissions:
       mychunk.commands.price: true
   mychunk.commands.price:
     description: Access to command /mychunk price
+    default: op
+  mychunk.commands.max:
+    description: Access to command /mychunk max
     default: op
   mychunk.commands.stats:
     description: Access to command /mychunk

@@ -1,6 +1,9 @@
 package me.ellbristow.mychunk;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -20,6 +23,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class MyChunkListener implements Listener {
@@ -151,7 +155,7 @@ public class MyChunkListener implements Listener {
         if (!event.isCancelled()) {
             if (event.getAction().equals(Action.LEFT_CLICK_BLOCK) || event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
                 Block block = event.getClickedBlock();
-                if (block.getTypeId() == 64 || block.getTypeId() == 71 || block.getTypeId() == 96) {
+                if (block.getTypeId() == 64 || block.getTypeId() == 71 || block.getTypeId() == 96 || block.getTypeId() == 107) {
                     MyChunkChunk chunk = new MyChunkChunk(block, plugin);
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
@@ -270,8 +274,10 @@ public class MyChunkListener implements Listener {
                 Player player = event.getPlayer();
                 Block block = event.getBlock();
                 MyChunkChunk chunk = new MyChunkChunk(block, plugin);
+                boolean allowed = true;
                 if (!player.hasPermission("mychunk.claim") && !player.hasPermission("mychunk.claim.server")) {
                     player.sendMessage(ChatColor.RED + "You do not have permission to claim chunks!");
+                    allowed = false;
                 } else if (chunk.isClaimed()) {
                     String owner = chunk.getOwner();
                     if (owner.equalsIgnoreCase(player.getName())) {
@@ -279,11 +285,21 @@ public class MyChunkListener implements Listener {
                     } else {
                         player.sendMessage(ChatColor.RED + "This Chunk is already owned by " + ChatColor.WHITE + owner + ChatColor.RED + "!");
                     }
-                } else {
+                    allowed = false;
+                } else if (chunk.hasNeighbours()) {
+                    String[] neighbours = chunk.getNeighbours();
+                    for (int i = 0; i<neighbours.length; i++) {
+                        if (!neighbours[i].equalsIgnoreCase("") && !neighbours[i].equalsIgnoreCase("server") && !neighbours[i].equalsIgnoreCase("unclaimed") && !neighbours[i].equalsIgnoreCase(player.getName())) {
+                            player.sendMessage(ChatColor.RED + "You cannot claim a chunk next to someone elses chunk!");
+                            allowed = false;
+                        }
+                    }
+                }
+                if (allowed) {
                     String line1 = event.getLine(1);
-                    if (line1.equals("") || line1.equals(player.getName())) {
+                    if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                         int ownedChunks = plugin.ownedChunks(player.getName());
-                        if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.unlimited")) {
+                        if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.unlimited") || plugin.maxChunks == 0) {
                             chunk.claim(player.getName());
                             player.sendMessage(ChatColor.GOLD + "Chunk claimed!");
                             if (plugin.foundEconomy && plugin.chunkPrice != 0 && !player.hasPermission("mychunk.free")) {
@@ -295,7 +311,7 @@ public class MyChunkListener implements Listener {
                         }
                     } else {
                         String correctName = "";
-                        boolean allowed = true;
+                        allowed = true;
                         if (line1.equalsIgnoreCase("server")) {
                             if (!player.hasPermission("mychunk.claim.server")) {
                                 player.sendMessage(ChatColor.RED + "You do not have permission to claim chunks for the server!");
@@ -319,7 +335,7 @@ public class MyChunkListener implements Listener {
                         }
                         if (allowed) {
                             int ownedChunks = plugin.ownedChunks(player.getName());
-                            if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.others.unlimited") || (correctName.equalsIgnoreCase("server") && player.hasPermission("mychunk.server.claim"))) {
+                            if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.others.unlimited") || plugin.maxChunks == 0 || (correctName.equalsIgnoreCase("server") && player.hasPermission("mychunk.server.claim"))) {
                                 chunk.claim(correctName);
                                 player.sendMessage(ChatColor.GOLD + "Chunk claimed for " + ChatColor.WHITE + correctName + ChatColor.GOLD + "!");
                                 if (plugin.foundEconomy && plugin.chunkPrice != 0 && !correctName.equalsIgnoreCase("server")) {
@@ -383,6 +399,21 @@ public class MyChunkListener implements Listener {
                 }
                 event.setCancelled(true);
                 breakSign(block);
+            }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    private void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (!event.isCancelled()) {
+            MyChunkChunk fromChunk = new MyChunkChunk(event.getFrom().getBlock(), plugin);
+            MyChunkChunk toChunk = new MyChunkChunk(event.getTo().getBlock(), plugin);
+            if (!fromChunk.getOwner().equals(toChunk.getOwner())) {
+                if (toChunk.getOwner().equalsIgnoreCase("server")) {
+                    event.getPlayer().sendMessage(ChatColor.LIGHT_PURPLE + "~" + toChunk.getOwner());
+                } else {
+                    event.getPlayer().sendMessage(ChatColor.GOLD + "~" + toChunk.getOwner());
+                }
             }
         }
     }

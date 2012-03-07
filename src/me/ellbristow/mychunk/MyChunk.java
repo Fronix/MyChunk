@@ -75,10 +75,10 @@ public class MyChunk extends JavaPlugin {
                 sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " by " + ChatColor.WHITE + "ellbristow");
                 sender.sendMessage("============================");
                 if (sender instanceof Player) {
-                    sender.sendMessage("Chunks You Own: " + ownedChunks(sender.getName()));
+                    sender.sendMessage(ChatColor.GOLD + "Chunks You Own: " + ChatColor.WHITE + ownedChunks(sender.getName()));
                 }
                 sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
-                sender.sendMessage("Maxiumum chunks per player: " + maxChunks);
+                sender.sendMessage(ChatColor.GOLD + "Maxiumum chunks per player: " + ChatColor.WHITE + maxChunks);
                 if (foundEconomy) {
                     sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
                     String paid = "No";
@@ -138,6 +138,23 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                         return false;
                     }
+                }
+            } else if (args[0].equalsIgnoreCase("max")) {
+                if (sender.hasPermission("mychunk.commands.max")) {
+                    int newMax = maxChunks;
+                    try {
+                        newMax = Integer.parseInt(args[1]);
+                    } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Amount must be an integer! (0 = unlimited)");
+                    sender.sendMessage(ChatColor.RED + "/mychunk max {new_max}");
+                    return false;
+                    }
+                    config.set("max_chunks", args[1]);
+                    saveConfig();
+                    return true;
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    return false;
                 }
             }
         }
