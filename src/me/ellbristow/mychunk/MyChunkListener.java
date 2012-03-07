@@ -268,6 +268,7 @@ public class MyChunkListener implements Listener {
     public void onSignChange (SignChangeEvent event) {
         if (!event.isCancelled()) {
             String line0 = event.getLine(0);
+            String line1 = event.getLine(1);
             if (line0.equalsIgnoreCase("[claim]")) {
             // Player attempted to claim a chunk
             // Only applies if player has rights to build in the chunk
@@ -289,14 +290,18 @@ public class MyChunkListener implements Listener {
                 } else if (chunk.hasNeighbours()) {
                     String[] neighbours = chunk.getNeighbours();
                     for (int i = 0; i<neighbours.length; i++) {
-                        if (!neighbours[i].equalsIgnoreCase("") && !neighbours[i].equalsIgnoreCase("server") && !neighbours[i].equalsIgnoreCase("unclaimed") && !neighbours[i].equalsIgnoreCase(player.getName())) {
-                            player.sendMessage(ChatColor.RED + "You cannot claim a chunk next to someone elses chunk!");
-                            allowed = false;
+                        if (!neighbours[i].equalsIgnoreCase("") && !neighbours[i].equalsIgnoreCase("server") && !neighbours[i].equalsIgnoreCase("unowned")) {
+                            if ((line1.equalsIgnoreCase(player.getName()) || line1.equals("")) && !neighbours[i].equalsIgnoreCase(player.getName())) {
+                                player.sendMessage(ChatColor.RED + "You cannot claim a chunk next to someone else's chunk!");
+                                allowed = false;
+                            } else if (!neighbours[i].equalsIgnoreCase(line1) && !neighbours[i].equalsIgnoreCase("server")) {
+                                player.sendMessage(ChatColor.RED + "You cannot claim a chunk next to someone else's chunk!");
+                                allowed = false;
+                            }
                         }
                     }
                 }
                 if (allowed) {
-                    String line1 = event.getLine(1);
                     if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                         int ownedChunks = plugin.ownedChunks(player.getName());
                         if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.unlimited") || plugin.maxChunks == 0) {

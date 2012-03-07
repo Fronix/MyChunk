@@ -85,10 +85,10 @@ public class MyChunkChunk {
     }
     
     public String[] getNeighbours() {
-        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(0, 64, 0), plugin);
-        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(0, 64, 0), plugin);
-        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(0, 64, 0), plugin);
-        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(0, 64, 0), plugin);
+        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(5, 64, 5), plugin);
         String[] neighbours = {chunkX1.getOwner(), chunkX2.getOwner(), chunkZ1.getOwner(), chunkZ2.getOwner()};
         return neighbours;
     }
@@ -110,10 +110,10 @@ public class MyChunkChunk {
     }
     
     public boolean hasNeighbours() {
-        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(0, 64, 0), plugin);
-        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(0, 64, 0), plugin);
-        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(0, 64, 0), plugin);
-        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(0, 64, 0), plugin);
+        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(5, 64, 5), plugin);
         if (!chunkX1.isClaimed() || !chunkX2.isClaimed() || !chunkZ1.isClaimed() || !chunkZ2.isClaimed()) {
             return true;
         }
