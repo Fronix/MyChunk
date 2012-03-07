@@ -291,10 +291,10 @@ public class MyChunkListener implements Listener {
                     String[] neighbours = chunk.getNeighbours();
                     for (int i = 0; i<neighbours.length; i++) {
                         if (!neighbours[i].equalsIgnoreCase("") && !neighbours[i].equalsIgnoreCase("server") && !neighbours[i].equalsIgnoreCase("unowned")) {
-                            if ((line1.equalsIgnoreCase(player.getName()) || line1.equals("")) && !neighbours[i].equalsIgnoreCase(player.getName())) {
+                            if (!neighbours[i].equalsIgnoreCase(player.getName()) && line1.equalsIgnoreCase("")) {
                                 player.sendMessage(ChatColor.RED + "You cannot claim a chunk next to someone else's chunk!");
                                 allowed = false;
-                            } else if (!neighbours[i].equalsIgnoreCase(line1) && !neighbours[i].equalsIgnoreCase("server")) {
+                            } else if (!line1.equals("") && !neighbours[i].equalsIgnoreCase(line1) && !line1.equalsIgnoreCase("server")) {
                                 player.sendMessage(ChatColor.RED + "You cannot claim a chunk next to someone else's chunk!");
                                 allowed = false;
                             }
