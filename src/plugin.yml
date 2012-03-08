@@ -4,7 +4,7 @@ version: 0.1.1
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
-softdepend: [Vault,MyWorlds,Multiverse]
+softdepend: [Vault,My Worlds,Multiverse]
 
 commands:
   mychunk:
