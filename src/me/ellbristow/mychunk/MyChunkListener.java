@@ -64,7 +64,7 @@ public class MyChunkListener implements Listener {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName())) {
-                    if (!owner.equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.build")) {
+                    if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
                         player.sendMessage(ChatColor.RED + "You do not have permission to build here!");
                         event.setCancelled(true);
                     }
@@ -98,7 +98,7 @@ public class MyChunkListener implements Listener {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName())) {
-                    if (!owner.equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.ignite"))
+                    if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.ignite")))
                         player.sendMessage(ChatColor.RED + "FIRE! Oh phew... you're not allowed!");
                         event.setCancelled(true);
                 }
@@ -160,7 +160,7 @@ public class MyChunkListener implements Listener {
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
                     if (chunk.isClaimed() && !owner.equals(player.getName())) {
-                        if (!chunk.getOwner().equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.use")) {
+                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                             player.sendMessage(ChatColor.RED + ">KNOCK< >KNOCK< This door is locked!");
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
@@ -174,7 +174,7 @@ public class MyChunkListener implements Listener {
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
                     if (chunk.isClaimed() && !owner.equals(player.getName())) {
-                        if (!chunk.getOwner().equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.use")) {
+                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                             player.sendMessage(ChatColor.RED + ">BUZZZ< The button tripped a silent alarm!");
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
@@ -188,7 +188,7 @@ public class MyChunkListener implements Listener {
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
                     if (chunk.isClaimed() && !owner.equals(player.getName())) {
-                        if (!chunk.getOwner().equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.use")) {
+                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                             player.sendMessage(ChatColor.RED + ">CLICK< The lever tripped a silent alarm!");
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
@@ -204,7 +204,7 @@ public class MyChunkListener implements Listener {
                 MyChunkChunk chunk = new MyChunkChunk(block, plugin);
                 String owner = chunk.getOwner();
                 if (chunk.isClaimed() && !owner.equals(player.getName())) {
-                    if (!chunk.getOwner().equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.use")) {
+                    if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                         event.setCancelled(true);
                     }
                 }
