@@ -81,7 +81,7 @@ public class MyChunkListener implements Listener {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName())) {
-                    if (!owner.equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.destroy")) {
+                    if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
                         player.sendMessage(ChatColor.RED + "You do not have permission to break blocks here!");
                         event.setCancelled(true);
                     }
