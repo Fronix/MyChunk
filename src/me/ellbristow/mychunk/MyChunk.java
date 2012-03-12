@@ -2,7 +2,6 @@ package me.ellbristow.mychunk;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.ChatColor;
@@ -46,7 +45,8 @@ public class MyChunk extends JavaPlugin {
             logger.info("[Vault] found and hooked!");
             if (vault.foundEconomy) {
                 foundEconomy = true;
-                logger.info("[" + vault.economyName + "] found and hooked!");
+                String message = "[" + vault.economyName + "] found and hooked!";
+                logger.info(message);
                 chunkPrice = config.getDouble("chunk_price", 0.00);
                 config.set("chunk_price", chunkPrice);
                 maxChunks = config.getInt("max_chunks", 8);
@@ -163,9 +163,9 @@ public class MyChunk extends JavaPlugin {
     
     public int ownedChunks(String playerName) {
         int owned = 0;
-        Set<String> allChunks = plugin.chunkStore.getKeys(true);
-        for (int i = 1; i < allChunks.size(); i++) {
-            String thisOwner = plugin.chunkStore.getString(allChunks.iterator().next() + ".owner");
+        Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+        for (int i = 1; i < allChunks.length; i++) {
+            String thisOwner = plugin.chunkStore.getString(allChunks[i] + ".owner");
             if (playerName.equals(thisOwner)) {
                 owned++;
             }

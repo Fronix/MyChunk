@@ -409,7 +409,7 @@ public class MyChunkListener implements Listener {
     }
     
     @EventHandler (priority = EventPriority.NORMAL)
-    private void onPlayerTeleport(PlayerTeleportEvent event) {
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
         if (!event.isCancelled()) {
             MyChunkChunk fromChunk = new MyChunkChunk(event.getFrom().getBlock(), plugin);
             MyChunkChunk toChunk = new MyChunkChunk(event.getTo().getBlock(), plugin);

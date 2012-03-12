@@ -162,9 +162,16 @@ public class MyChunkChunk {
             checkBlock = chunk.getBlock( x , y , z );
         }
         // Now we have an air block, drop down until we find a block which is solid
+        int attempts = 0;
         while (notAttachable(checkBlock)) {
+            if (attempts > chunk.getWorld().getMaxHeight()) {
+                // ALL AIR (i.e. THE_END)
+                checkBlock = chunk.getBlock(x,64,z);
+                break;
+            }
             y--;
             checkBlock = chunk.getBlock( x , y , z );
+            attempts++;
         }
         return checkBlock;
     }
