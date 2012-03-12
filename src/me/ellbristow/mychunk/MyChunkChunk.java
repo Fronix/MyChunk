@@ -1,5 +1,8 @@
 package me.ellbristow.mychunk;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 
@@ -8,6 +11,7 @@ public class MyChunkChunk {
     private MyChunk plugin;
     private String[] dims;
     private String owner;
+    private HashMap<String,String> allowed = new HashMap<String, String>();
     private Chunk chunk;
     private String chunkWorld;
     private Integer chunkX;
@@ -16,6 +20,7 @@ public class MyChunkChunk {
     private Block chunkSE;
     private Block chunkSW;
     private Block chunkNW;
+    private String[] availableFlags = {"*","B","C","D","I","L","O","U","W"};
     
     public MyChunkChunk (Block block, MyChunk instance) {
         plugin = instance;
@@ -26,6 +31,19 @@ public class MyChunkChunk {
         String[] thisDims = {chunkWorld, chunkX+"", chunkZ+""};
         dims = thisDims;
         owner = plugin.chunkStore.getString(this.dimsToConfigString() + ".owner", "Unowned");
+        String allowedString = plugin.chunkStore.getString(this.dimsToConfigString() + ".allowed", "");
+        if (!allowedString.equals("")) {
+            for (String allowedPlayer : allowedString.split(";")) {
+                String[] splitPlayer = allowedPlayer.split(":");
+                allowed.put(splitPlayer[0], splitPlayer[1]);
+            }
+        }
+        String disallowedString = plugin.chunkStore.getString(this.dimsToConfigString() + ".disallowed", "");
+        if (!disallowedString.equals("")) {
+            for (String disallowedPlayer : disallowedString.split(";")) {
+                String[] splitPlayer = disallowedPlayer.split(":");
+            }
+        }
         chunkNE = findCorner("NE");
         chunkSE = findCorner("SE");
         chunkSW = findCorner("SW");
@@ -84,6 +102,62 @@ public class MyChunkChunk {
         }
     }
     
+    public void allow(String playerName, String flag) {
+        String flags = allowed.get(playerName.toLowerCase());
+        if (flags == null) {
+            flags = "";
+        }
+        String allFlags = "";
+        for (String thisFlag : availableFlags) {
+            if (!"*".equals(thisFlag)) {
+                allFlags += thisFlag;
+            }
+        }
+        if (!"*".equals(flag) && !isAllowed(playerName.toLowerCase(), flag)) {
+            flags += flag.toUpperCase();
+            char[] flagArray = flags.toCharArray();
+            Arrays.sort(flagArray);
+            flags = new String(flagArray);
+        }
+        if ("*".equals(flag) || flags.equals(allFlags)) {
+            flags = "*";
+            if ("*".equals(playerName.toLowerCase())) {
+                allowed.clear();
+            }
+        }
+        allowed.put(playerName.toLowerCase(), flags);
+        savePerms();
+    }
+    
+    public void disallow(String playerName, String flag) {
+        String flags = allowed.get(playerName.toLowerCase());
+        if (flags == null) {
+            return;
+        } else if (flags.equals("*")) {
+            flags = "";
+            for (String thisFlag : availableFlags) {
+                if (!"*".equals(thisFlag)) {
+                    flags += thisFlag;
+                }
+            }
+        }
+        if (!"*".equals(flag) && isAllowed(playerName.toLowerCase(), flag)) {
+            flags = flags.replaceAll(flag.toUpperCase(), "");
+            if ("*".equals(playerName.toLowerCase())) {
+                allowed.clear();
+            }
+            allowed.put(playerName.toLowerCase(), flags);
+            savePerms();
+        } else if (!"*".equals(flag) && !isAllowed(playerName.toLowerCase(), flag)) {
+            //Do stuff
+        } else if ("*".equals(flag)) {
+            if ("*".equals(playerName.toLowerCase())) {
+                allowed.clear();
+            }
+            savePerms();
+        }
+    }
+    
     public String[] getNeighbours() {
         MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
         MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);
@@ -91,6 +165,45 @@ public class MyChunkChunk {
         MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(5, 64, 5), plugin);
         String[] neighbours = {chunkX1.getOwner(), chunkX2.getOwner(), chunkZ1.getOwner(), chunkZ2.getOwner()};
         return neighbours;
+    }
+    
+    public String getAllowed() {
+        String allowedPlayers = "";
+        Object[] players = allowed.keySet().toArray();
+        if (players.length != 0) {
+            if ("*".equals((String)players[0])) {
+                allowedPlayers = "*";
+            } else {
+                for (Object player : players) {
+                    allowedPlayers += " " + player + "(" + getAllowedFlags((String)player) + ChatColor.GREEN + ")";
+                }
+                allowedPlayers = allowedPlayers.trim();
+                if ("".equals(allowedPlayers)) {
+                    allowedPlayers = "NONE";
+                }
+            }
+        } else {
+            allowedPlayers = "NONE";
+        }
+        return allowedPlayers;
+    }
+    
+    public String getAllowedFlags(String playerName) {
+        String flags = "";
+        for (String flag : availableFlags) {
+            if (!"*".equals(flag) && isAllowed(playerName, flag)) {
+                flags += flag;
+            }
+        }
+        flags = flags.trim();
+        if ("BCDILOUW".equalsIgnoreCase(flags)) {
+          flags = "*";  
+        } 
+        if (!"".equals(flags)) {
+            return ChatColor.GREEN + flags;
+        } else {
+            return ChatColor.RED + "NONE";
+        }
     }
     
     public String getOwner() {
@@ -123,6 +236,37 @@ public class MyChunkChunk {
     public boolean isClaimed() {
         if (!owner.equals("Unowned")) {
             return true;
+        }
+        return false;
+    }
+    
+    public boolean isAllowed(String playerName, String flag) {
+        String allowedFlags = allowed.get(playerName.toLowerCase());
+        if (allowedFlags != null) {
+            char[] flags = allowedFlags.toUpperCase().toCharArray();
+            for (char checkFlag: flags) {
+                if (flag.charAt(0) == checkFlag || "*".charAt(0) == checkFlag) {
+                    return true;
+                 }
+            }
+        }
+        allowedFlags = allowed.get("*");
+        if (allowedFlags != null) {
+            char[] flags = allowedFlags.toUpperCase().toCharArray();
+            for (char checkFlag: flags) {
+                if (flag.charAt(0) == checkFlag || "*".charAt(0) == checkFlag) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    public boolean isFlag(String flag) {
+        for (String thisFlag : availableFlags) {
+            if (thisFlag.equalsIgnoreCase(flag)) {
+                return true;
+            }
         }
         return false;
     }
@@ -184,6 +328,20 @@ public class MyChunkChunk {
             }
         }
         return false;
+    }
+    
+    private void savePerms() {
+        String newAllowed = "";
+        Object[] allowedPlayers = allowed.keySet().toArray();
+        Object[] allowedFlags = allowed.values().toArray();
+        for (int i = 0; i < allowedPlayers.length; i++) {
+            if (!newAllowed.equals("")) {
+                newAllowed += ";";
+            }
+            newAllowed += allowedPlayers[i] + ":" + allowedFlags[i];
+        }
+        plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", newAllowed);
+        plugin.saveChunkStore();
     }
 
 }

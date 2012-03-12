@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 0.1.4
+version: 0.2
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -32,6 +32,8 @@ permissions:
     children:
       mychunk.commands.stats: true
       mychunk.commands.price: true
+      mychunk.commands.max: true
+      mychunk.commands.flags: true
   mychunk.commands.price:
     description: Access to command /mychunk price
     default: op
@@ -40,6 +42,9 @@ permissions:
     default: op
   mychunk.commands.stats:
     description: Access to command /mychunk
+    default: op
+  mychunk.commands.flags:
+    description: Access to command /mychunk flags
     default: op
   mychunk.commands.toggle.*:
     description: Access to all commands starting with /mychunk toggle
@@ -82,14 +87,22 @@ permissions:
     default: op
     children:
       mychunk.server.build: true
+      mychunk.server.chests: true
       mychunk.server.destroy: true
+      mychunk.server.doors: true
       mychunk.server.ignite: true
       mychunk.server.use: true
   mychunk.server.build:
     description: Can build in server owned chunks
     default: op
+  mychunk.server.chests:
+    description: Can open chests in server owned chunks
+    default: op
   mychunk.server.destroy:
     description: Can destroy blocks in server owned chunks
+    default: op
+  mychunk.server.doors:
+    description: Can open doors in server owned chunks
     default: op
   mychunk.server.ignite:
     description: Can use explosives and Flint & Steel in server owned chunks

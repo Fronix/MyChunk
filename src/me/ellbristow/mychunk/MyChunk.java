@@ -92,6 +92,33 @@ public class MyChunk extends JavaPlugin {
             } else {
                 sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
             }
+        } else if (args.length == 1) {
+            if (args[0].equalsIgnoreCase("flags")) {
+                if (sender.hasPermission("mychunk.commands.flags")) {
+                    sender.sendMessage(ChatColor.GOLD + "MyChunk Permission Flags");
+                    sender.sendMessage(ChatColor.GOLD + "========================");
+                    sender.sendMessage(ChatColor.GREEN + "*" + ChatColor.GOLD + " = ALL | " + ChatColor.GREEN + "B" + ChatColor.GOLD + " = Build | " + ChatColor.GREEN + "C" + ChatColor.GOLD + " = Access Chests | " + ChatColor.GREEN + "D"  + ChatColor.GOLD + " = Destroy");
+                    sender.sendMessage(ChatColor.GREEN + "I"  + ChatColor.GOLD + " = Ignite Blocks | " + ChatColor.GREEN + "L"  + ChatColor.GOLD + " = Drop Lava | " + ChatColor.GREEN + "O"  + ChatColor.GOLD + " = Open Wooden Doors");
+                    sender.sendMessage(ChatColor.GREEN + "U"  + ChatColor.GOLD + " = Use Buttons/Levers etc | " + ChatColor.GREEN + "W"  + ChatColor.GOLD + " = Drop Water");
+                    return true;
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    return false;
+                }
+            } else if (args[0].equalsIgnoreCase("max")) {
+                sender.sendMessage(ChatColor.RED + "You must specify a new maximum chunk limit!");
+                sender.sendMessage(ChatColor.RED + "/mychunk max {new limit}");
+                return false;
+            } else if (args[0].equalsIgnoreCase("price")) {
+                sender.sendMessage(ChatColor.RED + "You must specify a new chunk price!");
+                sender.sendMessage(ChatColor.RED + "/mychunk price {new price}");
+                return false;
+            } else if (args[0].equalsIgnoreCase("toggle")) {
+                sender.sendMessage(ChatColor.RED + "You must specify what to toggle!");
+                sender.sendMessage(ChatColor.RED + "/mychunk toggle {option}");
+                sender.sendMessage(ChatColor.RED + "e.g. /mychunk toggle refund");
+                return false;
+            }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("price")) {
                 if (sender.hasPermission("mychunk.commands.price")) {
@@ -149,7 +176,10 @@ public class MyChunk extends JavaPlugin {
                     sender.sendMessage(ChatColor.RED + "/mychunk max {new_max}");
                     return false;
                     }
-                    config.set("max_chunks", args[1]);
+                    
+                    config.set("max_chunks", newMax);
+                    maxChunks = newMax;
+                    sender.sendMessage(ChatColor.GOLD + "Max Chunks is now set at " + ChatColor.WHITE + newMax + ChatColor.GOLD + "!");
                     saveConfig();
                     return true;
                 } else {
