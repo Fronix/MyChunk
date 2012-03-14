@@ -15,7 +15,7 @@ public class MyChunkVaultLink {
         initEconomy();
     }
     
-    public void initEconomy() {
+    public final void initEconomy() {
         RegisteredServiceProvider<Economy> economyProvider = plugin.getServer().getServicesManager().getRegistration(Economy.class);
         if (economyProvider != null) {
             economy = economyProvider.getProvider();

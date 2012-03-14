@@ -135,6 +135,7 @@ public class MyChunk extends JavaPlugin {
                             return false;
                         }
                         config.set("chunk_price", newPrice);
+                        chunkPrice = newPrice;
                         saveConfig();
                         sender.sendMessage(ChatColor.GOLD + "Chunk price set to " + vault.economy.format(newPrice));
                         return true;
