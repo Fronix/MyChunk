@@ -64,7 +64,7 @@ public class MyChunkListener implements Listener {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B")) {
-                    if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
+                    if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
                         player.sendMessage(ChatColor.RED + "You do not have permission to build here!");
                         if (block.getTypeId() != 63 && block.getTypeId() != 68) {
                             event.setCancelled(true);
@@ -83,7 +83,7 @@ public class MyChunkListener implements Listener {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D")) {
-                    if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
+                    if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
                         player.sendMessage(ChatColor.RED + "You do not have permission to break blocks here!");
                         event.setCancelled(true);
                     }
@@ -101,7 +101,7 @@ public class MyChunkListener implements Listener {
                 if (event.getCause() == IgniteCause.FLINT_AND_STEEL) {
                     Player player = event.getPlayer();
                     if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "I")) {
-                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.ignite"))) {
+                        if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.ignite"))) {
                             player.sendMessage(ChatColor.RED + "FIRE! Oh phew... you're not allowed!");
                             event.setCancelled(true);
                         }
@@ -144,12 +144,14 @@ public class MyChunkListener implements Listener {
             Block targetBlock = null;
             if (face.equals(BlockFace.UP) || face.equals(BlockFace.DOWN)|| face.equals(BlockFace.SELF)) {
                 targetBlock = block;
+            } else {
+                targetBlock = block.getRelative(face);
             }
             MyChunkChunk chunk = new MyChunkChunk(targetBlock, plugin);
             if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
-                if (!owner.equalsIgnoreCase(player.getName()) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
+                if ((!owner.equalsIgnoreCase(player.getName()) && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
                     int bucket = event.getBucket().getId();
                     if (bucket == 327 && !chunk.isAllowed(player.getName(), "L")) {
                         player.sendMessage(ChatColor.RED + "Are you crazy!? You can't drop lava there!");
@@ -175,7 +177,7 @@ public class MyChunkListener implements Listener {
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
                     if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "O")) {
-                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.doors"))) {
+                        if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.doors"))) {
                             player.sendMessage(ChatColor.RED + ">KNOCK< >KNOCK< This door is locked!");
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
@@ -189,7 +191,7 @@ public class MyChunkListener implements Listener {
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
                     if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
-                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
+                        if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                             player.sendMessage(ChatColor.RED + ">BUZZZ< The button tripped a silent alarm!");
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
@@ -203,7 +205,7 @@ public class MyChunkListener implements Listener {
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
                     if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
-                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
+                        if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                             player.sendMessage(ChatColor.RED + ">CLICK< The lever tripped a silent alarm!");
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
@@ -217,7 +219,7 @@ public class MyChunkListener implements Listener {
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();
                     if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "C")) {
-                        if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.chests"))) {
+                        if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.chests"))) {
                             player.sendMessage(ChatColor.RED + ">CLUNK< That chest isn't yours!");
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
@@ -233,7 +235,7 @@ public class MyChunkListener implements Listener {
                 MyChunkChunk chunk = new MyChunkChunk(block, plugin);
                 String owner = chunk.getOwner();
                 if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
-                    if (!owner.equalsIgnoreCase("server") || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
+                    if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                         event.setCancelled(true);
                     }
                 }

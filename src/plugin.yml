@@ -15,20 +15,27 @@ permissions:
 # Admin Permissions
   mychunk.*:
     description: Admin permission for total access
+    default: op
     children:
       mychunk.commands.*: true
       mychunk.claim.*: true
       mychunk.free: true
+      mychunk.override: true
       mychunk.server.*: true
       mychunk.unclaim.*: true
   
   mychunk.free:
     description: Player does not pay to claim chunks
     default: op
+  
+  mychunk.override:
+    description: Player can bypass chunk protections (handle with care!)
+    default: op
 
 # Command Permissions
   mychunk.commands.*:
     description: Access to all MyChunk commands
+    default: op
     children:
       mychunk.commands.stats: true
       mychunk.commands.price: true
@@ -84,7 +91,7 @@ permissions:
 # Server Permissions
   mychunk.server.*:
     description: Can build/destroy/use in server owned chunks.
-    default: op
+    default: false
     children:
       mychunk.server.build: true
       mychunk.server.chests: true
