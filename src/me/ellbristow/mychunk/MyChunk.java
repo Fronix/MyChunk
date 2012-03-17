@@ -38,6 +38,8 @@ public class MyChunk extends JavaPlugin {
         chunkStore.set("TotalOwned", claimedChunks);
         saveChunkStore();
         config = getConfig();
+        maxChunks = config.getInt("max_chunks", 8);
+        config.set("max_chunks", maxChunks);
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
             foundVault = true;
             vault = new MyChunkVaultLink(this);
@@ -49,17 +51,15 @@ public class MyChunk extends JavaPlugin {
                 logger.info(message);
                 chunkPrice = config.getDouble("chunk_price", 0.00);
                 config.set("chunk_price", chunkPrice);
-                maxChunks = config.getInt("max_chunks", 8);
-                config.set("max_chunks", maxChunks);
                 unclaimRefund = config.getBoolean("unclaim_refund", false);
                 config.set("unclaim_refund", unclaimRefund);
-                saveConfig();
             } else {
                 logger.info("No economy plugin found! Chunks will be free");
             }
         } else {
             logger.info("Vault not found! Chunks will be free");
         }
+        saveConfig();
     }
     
     @Override

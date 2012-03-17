@@ -331,6 +331,10 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
+                if (plugin.foundEconomy && plugin.chunkPrice != 0 && !player.hasPermission("mychunk.free") && plugin.vault.economy.getBalance(player.getName()) < plugin.chunkPrice) {
+                    player.sendMessage(ChatColor.RED + "You cannot afford to claim that chunk! (Price: " + ChatColor.WHITE + plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.RED + ")!");
+                    allowed = false;
+                }
                 if (allowed) {
                     if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                         int ownedChunks = plugin.ownedChunks(player.getName());
