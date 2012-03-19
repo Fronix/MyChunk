@@ -20,7 +20,7 @@ public class MyChunkChunk {
     private Block chunkSE;
     private Block chunkSW;
     private Block chunkNW;
-    private String[] availableFlags = {"*","B","C","D","I","L","O","U","W"};
+    private String[] availableFlags = {"*","B","C","D","I","L","O","S","U","W"};
     
     public MyChunkChunk (Block block, MyChunk instance) {
         plugin = instance;
@@ -190,13 +190,18 @@ public class MyChunkChunk {
     
     public String getAllowedFlags(String playerName) {
         String flags = "";
+        String allFlags = "";
         for (String flag : availableFlags) {
-            if (!"*".equals(flag) && isAllowed(playerName, flag)) {
-                flags += flag;
+            if (!"*".equals(flag)) {
+                if (isAllowed(playerName, flag)) {
+                    flags += flag;
+                }
+                allFlags += flag;
             }
         }
         flags = flags.trim();
-        if ("BCDILOUW".equalsIgnoreCase(flags)) {
+        allFlags = allFlags.trim();
+        if (allFlags.equalsIgnoreCase(flags)) {
           flags = "*";  
         } 
         if (!"".equals(flags)) {

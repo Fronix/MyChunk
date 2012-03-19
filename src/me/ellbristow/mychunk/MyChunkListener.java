@@ -127,7 +127,7 @@ public class MyChunkListener implements Listener {
     }
     
     @EventHandler (priority = EventPriority.NORMAL)
-    public void onZmbieDoorEvent (EntityInteractEvent event) {
+    public void onZombieDoorEvent (EntityInteractEvent event) {
         if (event.getBlock().getTypeId() == 64 && event.getEntityType().equals(EntityType.ZOMBIE)) {
             MyChunkChunk chunk = new MyChunkChunk(event.getBlock(), plugin);
             if (chunk.isClaimed()) {
@@ -224,6 +224,20 @@ public class MyChunkListener implements Listener {
                             OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                             if (ownerPlayer.isOnline()) {
                                 ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + ">CLUNK< Someone tryed to open a chest on your chunk!");
+                            }
+                            event.setCancelled(true);
+                        }
+                    }
+                } else if (block.getTypeId() == 61 || block.getTypeId() == 23 || block.getTypeId() == 117) {
+                    MyChunkChunk chunk = new MyChunkChunk(block, plugin);
+                    Player player = event.getPlayer();
+                    String owner = chunk.getOwner();
+                    if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "S")) {
+                        if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.special"))) {
+                            player.sendMessage(ChatColor.RED + ">BUZZZ< Hands off! That's a special block!");
+                            OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
+                            if (ownerPlayer.isOnline()) {
+                                ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + ">BUZZZ< Someone touched a special block in your chunk!");
                             }
                             event.setCancelled(true);
                         }
