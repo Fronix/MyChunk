@@ -457,7 +457,10 @@ public class MyChunkListener implements Listener {
                 Player player = event.getPlayer();
                 Block block = event.getBlock();
                 MyChunkChunk chunk = new MyChunkChunk(block, plugin);
-                String line2 = event.getLine(2);
+                if ("EVERYONE".equals(line1.toUpperCase())) {
+                    line1 = "*";
+                }
+                String line2 = event.getLine(2).toUpperCase();
                 if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
                     player.sendMessage(ChatColor.RED + "You do not own this chunk!");
                 } else if ("".equals(line1) || line1.contains(" ")) {
@@ -486,10 +489,11 @@ public class MyChunkListener implements Listener {
                     String displayName = targetName;
                     if (displayName.equals("*")) {
                         displayName = "EVERYONE";
-                    } else if (found && !"*".equalsIgnoreCase(line2)) {
+                    }
+                    if (found && !"*".equalsIgnoreCase(line2)) {
                         String errors = "";
                         for (int i = 0; i < line2.length(); i++) {
-                            String thisChar = line2.substring(i, i+1);
+                            String thisChar = line2.substring(i, i+1).replaceAll(" ","");
                             if (chunk.isFlag(thisChar.toUpperCase())) {
                                 chunk.allow(targetName, thisChar);
                             } else {
@@ -500,14 +504,18 @@ public class MyChunkListener implements Listener {
                         if (!"".equals(errors)) {
                             player.sendMessage(ChatColor.RED + "Flags not found: " + errors);
                         }
-                        player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " now has the following flags:");
-                        player.sendMessage(ChatColor.GREEN + "Allowed: " + chunk.getAllowedFlags(targetName));
+                        player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags added: " + ChatColor.GREEN + line2.replaceAll(" ",""));
+                        if (!"*".equals(targetName)) {
+                            player.sendMessage(ChatColor.GREEN + "Allowed: " + chunk.getAllowedFlags(targetName));
+                        }
                         player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
-                    } else if ("*".equalsIgnoreCase(line2)) {
+                    } else if (found && "*".equalsIgnoreCase(line2)) {
                         chunk.allow(targetName, "*");
                         player.sendMessage(ChatColor.GOLD + "Permission updated!");
-                        player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " now has the following flags:");
-                        player.sendMessage(ChatColor.GREEN + "Allowed: " + chunk.getAllowedFlags(targetName));
+                        player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags added: " + ChatColor.GREEN + line2.replaceAll(" ",""));
+                        if (!"*".equals(targetName)) {
+                            player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
+                        }
                         player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
                     }
                 } 
@@ -518,14 +526,19 @@ public class MyChunkListener implements Listener {
                 Player player = event.getPlayer();
                 Block block = event.getBlock();
                 MyChunkChunk chunk = new MyChunkChunk(block, plugin);
-                String line2 = event.getLine(2);
+                if ("EVERYONE".equals(line1.toUpperCase())) {
+                    line1 = "*";
+                }
+                String line2 = event.getLine(2).toUpperCase();
                 if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
                     player.sendMessage(ChatColor.RED + "You do not own this chunk!");
                 } else if ("".equals(line1) || line1.contains(" ")) {
                     player.sendMessage(ChatColor.RED + "Line 2 must contain a player name (or * for all)!");
                 } else if (line1.equalsIgnoreCase(player.getName())) {
                     player.sendMessage(ChatColor.RED + "You cannot disallow yourself!");
-                } else {
+                } else if (!"*".equals(line1) && chunk.isAllowed("*",line2)) {
+                    player.sendMessage(ChatColor.RED + "You cannot disallow flags allowed to EVERYONE!");
+                }else {
                     if ("".equals(line2)) {
                         line2 = "*";
                     }
@@ -551,7 +564,7 @@ public class MyChunkListener implements Listener {
                     if (found && !"*".equalsIgnoreCase(line2)) {
                         String errors = "";
                         for (int i = 0; i < line2.length(); i++) {
-                            String thisChar = line2.substring(i, i+1);
+                            String thisChar = line2.substring(i, i+1).replaceAll(" ","");
                             if (chunk.isFlag(thisChar.toUpperCase())) {
                                 chunk.disallow(targetName, thisChar);
                             } else {
@@ -562,14 +575,18 @@ public class MyChunkListener implements Listener {
                         if (!"".equals(errors)) {
                             player.sendMessage(ChatColor.RED + "Flags not found: " + errors);
                         }
-                        player.sendMessage(ChatColor.WHITE + targetName + ChatColor.GOLD + " now has the following flags:");
-                        player.sendMessage(ChatColor.GREEN + "Allowed: " + chunk.getAllowedFlags(targetName));
+                        player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags removed: " + ChatColor.GREEN + line2.replaceAll(" ",""));
+                        if (!"*".equals(targetName)) {
+                            player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
+                        }
                         player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
-                    } else if ("*".equalsIgnoreCase(line2)) {
+                    } else if (found && "*".equalsIgnoreCase(line2)) {
                         chunk.disallow(targetName, "*");
                         player.sendMessage(ChatColor.GOLD + "Permission updated!");
-                        player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " now has the following flags:");
-                        player.sendMessage(ChatColor.GREEN + "Allowed: " + chunk.getAllowedFlags(targetName));
+                        player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags removed: " + ChatColor.GREEN + line2.replaceAll(" ",""));
+                        if (!"*".equals(targetName)) {
+                            player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
+                        }
                         player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
                     }
                 } 

@@ -80,7 +80,7 @@ public class MyChunkChunk {
     
     public void unclaim() {
         owner = "Unowned";
-        plugin.chunkStore.set(this.dimsToConfigString() + ".owner", null);
+        plugin.chunkStore.set(this.dimsToConfigString(), null);
         plugin.claimedChunks--;
         plugin.chunkStore.set("TotalOwned", plugin.claimedChunks);
         plugin.saveChunkStore();
@@ -103,7 +103,9 @@ public class MyChunkChunk {
     }
     
     public void allow(String playerName, String flag) {
-        String flags = allowed.get(playerName.toLowerCase());
+        playerName = playerName.toLowerCase();
+        flag = flag.replaceAll(" ","").toUpperCase();
+        String flags = allowed.get(playerName);
         if (flags == null) {
             flags = "";
         }
@@ -113,7 +115,7 @@ public class MyChunkChunk {
                 allFlags += thisFlag;
             }
         }
-        if (!"*".equals(flag) && !isAllowed(playerName.toLowerCase(), flag)) {
+        if (!"*".equals(flag) && !isAllowed(playerName, flag)) {
             flags += flag.toUpperCase();
             char[] flagArray = flags.toCharArray();
             Arrays.sort(flagArray);
@@ -121,7 +123,7 @@ public class MyChunkChunk {
         }
         if ("*".equals(flag) || flags.equals(allFlags)) {
             flags = "*";
-            if ("*".equals(playerName.toLowerCase())) {
+            if ("*".equals(playerName)) {
                 allowed.clear();
             }
         }
@@ -129,33 +131,63 @@ public class MyChunkChunk {
         savePerms();
     }
     
-    public void disallow(String playerName, String flag) {
-        String flags = allowed.get(playerName.toLowerCase());
-        if (flags == null) {
-            return;
-        } else if (flags.equals("*")) {
-            flags = "";
-            for (String thisFlag : availableFlags) {
-                if (!"*".equals(thisFlag)) {
-                    flags += thisFlag;
+    public void disallow(String playerName, String flagString) {
+        playerName = playerName.toLowerCase();
+        flagString = flagString.toUpperCase().replaceAll(" ","");
+        if ("*".equals(playerName) && ("*".equals(flagString) || "".equals(flagString) || "".equals(flagString))) {
+            allowed.clear();
+        } else if ("*".equals(flagString) || "".equals(flagString) || " ".equals(flagString)) {
+            allowed.put(playerName,"");
+        } else {
+            String flags = allowed.get(playerName);
+            if (flags == null && !"*".equals(playerName)) {
+                return;
+            } else if ("*".equals(flags)) {
+                flags = "";
+                for (String thisFlag : availableFlags) {
+                    if (!"*".equals(thisFlag)) {
+                        flags += thisFlag;
+                    }
+                }
+            }
+            for(int i = 0; i < flagString.length(); i++) {
+                String flag = flagString.substring(i, i+1);
+                if ("*".equals(flag)) {
+                    if ("*".equals(playerName)) {
+                        Object[] players = allowed.keySet().toArray();
+                        for (Object player : players) {
+                            String perms = allowed.get((String)player);
+                            perms = perms.replaceAll(flag,"");
+                            allowed.put((String)player,perms);
+                        }
+                    } else {
+                        allowed.put(playerName, "");
+                    }
+                    break;
+                } else {
+                    if ("*".equals(playerName)) {
+                        Object[] players = allowed.keySet().toArray();
+                        for (Object player : players) {
+                            String perms = allowed.get((String)player);
+                            if ("*".equals(perms)) {
+                                perms = "";
+                                for (String thisFlag : availableFlags) {
+                                    if (!"*".equals(thisFlag)) {
+                                        perms += thisFlag;
+                                    }
+                                }
+                            }
+                            perms = perms.replaceAll(flag,"");
+                            allowed.put((String)player,perms);
+                        }
+                    } else {
+                        flags = flags.replaceAll(flag, "");
+                        allowed.put(playerName, flags);
+                    }
                 }
             }
         }
-        if (!"*".equals(flag) && isAllowed(playerName.toLowerCase(), flag)) {
-            flags = flags.replaceAll(flag.toUpperCase(), "");
-            if ("*".equals(playerName.toLowerCase())) {
-                allowed.clear();
-            }
-            allowed.put(playerName.toLowerCase(), flags);
-            savePerms();
-        } else if (!"*".equals(flag) && !isAllowed(playerName.toLowerCase(), flag)) {
-            //Do stuff
-        } else if ("*".equals(flag)) {
-            if ("*".equals(playerName.toLowerCase())) {
-                allowed.clear();
-            }
-            savePerms();
-        }
+        savePerms();
     }
     
     public String[] getNeighbours() {
@@ -172,9 +204,12 @@ public class MyChunkChunk {
         Object[] players = allowed.keySet().toArray();
         if (players.length != 0) {
             if ("*".equals((String)players[0])) {
-                allowedPlayers = "*";
+                allowedPlayers = "EVERYONE(*)";
             } else {
                 for (Object player : players) {
+                    if (player.equals("*")) {
+                        player = "EVERYONE";
+                    }
                     allowedPlayers += " " + player + "(" + getAllowedFlags((String)player) + ChatColor.GREEN + ")";
                 }
                 allowedPlayers = allowedPlayers.trim();
@@ -250,17 +285,21 @@ public class MyChunkChunk {
         if (allowedFlags != null) {
             char[] flags = allowedFlags.toUpperCase().toCharArray();
             for (char checkFlag: flags) {
-                if (flag.charAt(0) == checkFlag || "*".charAt(0) == checkFlag) {
-                    return true;
-                 }
+                for (char thisFlag : flag.toCharArray()) {
+                    if (thisFlag == checkFlag || "*".charAt(0) == checkFlag) {
+                        return true;
+                    }
+                }
             }
         }
         allowedFlags = allowed.get("*");
         if (allowedFlags != null) {
             char[] flags = allowedFlags.toUpperCase().toCharArray();
             for (char checkFlag: flags) {
-                if (flag.charAt(0) == checkFlag || "*".charAt(0) == checkFlag) {
-                    return true;
+                for (char thisFlag : flag.toCharArray()) {
+                    if (thisFlag == checkFlag || "*".charAt(0) == checkFlag) {
+                        return true;
+                    }
                 }
             }
         }
@@ -336,17 +375,29 @@ public class MyChunkChunk {
     }
     
     private void savePerms() {
-        String newAllowed = "";
-        Object[] allowedPlayers = allowed.keySet().toArray();
-        Object[] allowedFlags = allowed.values().toArray();
-        for (int i = 0; i < allowedPlayers.length; i++) {
-            if (!newAllowed.equals("")) {
-                newAllowed += ";";
+        if (allowed.isEmpty()) {
+            plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", null);
+        } else {
+            String newAllowed = "";
+            Object[] allowedPlayers = allowed.keySet().toArray();
+            Object[] allowedFlags = allowed.values().toArray();
+            for (int i = 0; i < allowedPlayers.length; i++) {
+                if (!"".equals(allowedFlags[i])) {
+                    if (!newAllowed.equals("")) {
+                        newAllowed += ";";
+                    }
+                    newAllowed += allowedPlayers[i] + ":" + allowedFlags[i];
+                } else {
+                    allowed.remove((String)allowedPlayers[i]);
+                }
             }
-            newAllowed += allowedPlayers[i] + ":" + allowedFlags[i];
+            if ("".equals(newAllowed)) {
+                plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", null);
+            } else {
+                plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", newAllowed);
+            }
+            plugin.saveChunkStore();
         }
-        plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", newAllowed);
-        plugin.saveChunkStore();
     }
 
 }
