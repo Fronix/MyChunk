@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 0.2.4
+version: 1.0.0
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -17,10 +17,12 @@ permissions:
     description: Admin permission for total access
     default: op
     children:
+      mychunk.buy: true
       mychunk.commands.*: true
       mychunk.claim.*: true
       mychunk.free: true
       mychunk.override: true
+      mychunk.sell: true
       mychunk.server.*: true
       mychunk.unclaim.*: true
   
@@ -86,6 +88,15 @@ permissions:
     default: op
   mychunk.claim.server:
     description: Can claim chunks for the server
+    default: op
+
+# Resale Permissions
+
+  mychunk.sell:
+    description: Can sell chunks with a [For Sale] sign
+    default: op
+  mychunk.buy:
+    description: Can buy chunks set as [For Sale]
     default: op
 
 # Server Permissions

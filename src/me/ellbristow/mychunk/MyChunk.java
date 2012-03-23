@@ -24,6 +24,7 @@ public class MyChunk extends JavaPlugin {
     public boolean foundVault = false;
     public boolean foundEconomy = false;
     public boolean unclaimRefund = false;
+    public boolean allowNeighbours = false;
     public double chunkPrice = 0.00;
     public int maxChunks = 8;
     public MyChunkVaultLink vault;
@@ -40,6 +41,8 @@ public class MyChunk extends JavaPlugin {
         config = getConfig();
         maxChunks = config.getInt("max_chunks", 8);
         config.set("max_chunks", maxChunks);
+        allowNeighbours = config.getBoolean("allow_neighbours", false);
+        config.set("allow_neighbours", allowNeighbours);
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
             foundVault = true;
             vault = new MyChunkVaultLink(this);

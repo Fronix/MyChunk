@@ -15,10 +15,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.block.*;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -127,7 +124,7 @@ public class MyChunkListener implements Listener {
     }
     
     @EventHandler (priority = EventPriority.NORMAL)
-    public void onZombieDoorEvent (EntityInteractEvent event) {
+    public void onZombieDoorEvent (EntityBreakDoorEvent event) {
         if (event.getBlock().getTypeId() == 64 && event.getEntityType().equals(EntityType.ZOMBIE)) {
             MyChunkChunk chunk = new MyChunkChunk(event.getBlock(), plugin);
             if (chunk.isClaimed()) {
@@ -265,13 +262,28 @@ public class MyChunkListener implements Listener {
             if (fromLoc.getChunk() != toLoc.getChunk()) {
                 MyChunkChunk fromChunk = new MyChunkChunk(fromLoc.getBlock(), plugin);
                 MyChunkChunk toChunk = new MyChunkChunk(toLoc.getBlock(), plugin);
+                Player player = event.getPlayer();
                 if (!fromChunk.getOwner().equals(toChunk.getOwner())) {
-                    Player player = event.getPlayer();
-                    if (toChunk.getOwner().equalsIgnoreCase("server")) {
-                        player.sendMessage(ChatColor.LIGHT_PURPLE + "~Server");
-                    } else {
-                        player.sendMessage(ChatColor.GOLD + "~" + toChunk.getOwner());
+                    String forSale = "";
+                    if (toChunk.isForSale()) {
+                        forSale = ChatColor.YELLOW + " [Chunk For Sale";
+                        if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
+                            forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                        }
+                        forSale += "]";
                     }
+                    if (toChunk.getOwner().equalsIgnoreCase("server")) {
+                        player.sendMessage(ChatColor.LIGHT_PURPLE + "~Server" + forSale);
+                    } else {
+                        player.sendMessage(ChatColor.GOLD + "~" + toChunk.getOwner() + forSale);
+                    }
+                } else if (toChunk.isForSale()) {
+                    String forSale = ChatColor.YELLOW + "[Chunk For Sale";
+                    if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
+                        forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                    }
+                    forSale += "]";
+                    player.sendMessage(forSale);
                 }
             }
         }
@@ -327,11 +339,15 @@ public class MyChunkListener implements Listener {
                     String owner = chunk.getOwner();
                     if (owner.equalsIgnoreCase(player.getName())) {
                         player.sendMessage(ChatColor.RED + "You already own this chunk!");
-                    } else {
+                        allowed = false;
+                    } else if (!chunk.isForSale()) {
                         player.sendMessage(ChatColor.RED + "This Chunk is already owned by " + ChatColor.WHITE + owner + ChatColor.RED + "!");
+                        allowed = false;
+                    } else if (chunk.isForSale() && !player.hasPermission("mychunk.buy")) {
+                        player.sendMessage(ChatColor.RED + "You do not have permission to buy owned chunks!");
+                        allowed = false;
                     }
-                    allowed = false;
-                } else if (chunk.hasNeighbours()) {
+                } else if (plugin.allowNeighbours == false && chunk.hasNeighbours() && !chunk.isForSale()) {
                     String[] neighbours = chunk.getNeighbours();
                     for (int i = 0; i<neighbours.length; i++) {
                         if (!neighbours[i].equalsIgnoreCase("") && !neighbours[i].equalsIgnoreCase("server") && !neighbours[i].equalsIgnoreCase("unowned")) {
@@ -345,7 +361,7 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
-                if (plugin.foundEconomy && plugin.chunkPrice != 0 && !player.hasPermission("mychunk.free") && plugin.vault.economy.getBalance(player.getName()) < plugin.chunkPrice) {
+                if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && plugin.vault.economy.getBalance(player.getName()) < chunk.getClaimPrice()) {
                     player.sendMessage(ChatColor.RED + "You cannot afford to claim that chunk! (Price: " + ChatColor.WHITE + plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.RED + ")!");
                     allowed = false;
                 }
@@ -353,12 +369,19 @@ public class MyChunkListener implements Listener {
                     if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                         int ownedChunks = plugin.ownedChunks(player.getName());
                         if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.unlimited") || plugin.maxChunks == 0) {
+                            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free")) {
+                                plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getClaimPrice());
+                                player.sendMessage(plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + " was deducted from your account");
+                            }
+                            if (plugin.foundEconomy && chunk.isForSale()) {
+                                plugin.vault.economy.depositPlayer(chunk.getOwner(), chunk.getClaimPrice());
+                                OfflinePlayer oldOwner = plugin.getServer().getOfflinePlayer(chunk.getOwner());
+                                if (oldOwner.isOnline()) {
+                                    oldOwner.getPlayer().sendMessage(player.getName() + ChatColor.GOLD + " bought one of your chunks for " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + "!");
+                                }
+                            }
                             chunk.claim(player.getName());
                             player.sendMessage(ChatColor.GOLD + "Chunk claimed!");
-                            if (plugin.foundEconomy && plugin.chunkPrice != 0 && !player.hasPermission("mychunk.free")) {
-                                plugin.vault.economy.withdrawPlayer(player.getName(), plugin.chunkPrice);
-                                player.sendMessage(plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.GOLD + " was deducted from your account");
-                            }
                         } else {
                             player.sendMessage(ChatColor.RED + "You already own " + ownedChunks + " chunks! (Max " + plugin.maxChunks + ")");
                         }
@@ -592,6 +615,62 @@ public class MyChunkListener implements Listener {
                 } 
                 event.setCancelled(true);
                 breakSign(block);
+            } else if (line0.equalsIgnoreCase("[for sale]")) {
+                Player player = event.getPlayer();
+                MyChunkChunk chunk = new MyChunkChunk(event.getBlock(), plugin);
+                boolean allowed = true;
+                Double price = 0.00;
+                if (!player.hasPermission("mychunk.sell")) {
+                    player.sendMessage(ChatColor.RED + "You do not have permission to use [For Sale] signs!");
+                    event.setCancelled(true);
+                    breakSign(event.getBlock());
+                    allowed = false;
+                } else if (player.hasPermission("mychunk.free")) {
+                    player.sendMessage(ChatColor.RED + "You can claim chunks for free! You're not allowed to sell them!");
+                    event.setCancelled(true);
+                    breakSign(event.getBlock());
+                    allowed = false;
+                } else if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                    player.sendMessage(ChatColor.RED + "You can't sell this chunk, you don't own it!");
+                    event.setCancelled(true);
+                    breakSign(event.getBlock());
+                    allowed = false;
+                } else if (plugin.foundEconomy) {
+                    if (line1.isEmpty() || line1.equals("")) {
+                        player.sendMessage(ChatColor.RED + "Line 2 must contain your sale price!");
+                        event.setCancelled(true);
+                        breakSign(event.getBlock());
+                        allowed = false;
+                    } else {
+                        try {
+                            price = Double.parseDouble(line1);
+                        } catch (NumberFormatException nfe) {
+                            player.sendMessage(ChatColor.RED + "Line 2 must contain your sale price (in #.## format)!");
+                            event.setCancelled(true);
+                            breakSign(event.getBlock());
+                            allowed = false;
+                        }
+                        if (price == 0) {
+                            player.sendMessage(ChatColor.RED + "Sale price cannot be 0!");
+                            event.setCancelled(true);
+                            breakSign(event.getBlock());
+                            allowed = false;
+                        }
+                    }
+                    
+                }
+                if (allowed) {
+                    event.setLine(0, ChatColor.GOLD + "[For Sale]");
+                    event.setLine(1, ChatColor.GOLD + price.toString());
+                    if (plugin.foundEconomy) {
+                        player.sendMessage(ChatColor.GOLD + "Chunk on sale for " + plugin.vault.economy.format(price) + "!");
+                        chunk.setForSale(price);
+                    } else {
+                        player.sendMessage(ChatColor.GOLD + "Chunk on sale!");
+                        chunk.setForSale(plugin.chunkPrice);
+                    }
+                    breakSign(event.getBlock());
+                }
             }
             if (!event.isCancelled()) {
                 Block block = event.getBlock();

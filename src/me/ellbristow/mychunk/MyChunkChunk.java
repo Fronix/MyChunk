@@ -20,6 +20,8 @@ public class MyChunkChunk {
     private Block chunkSE;
     private Block chunkSW;
     private Block chunkNW;
+    private boolean forSale;
+    private double claimPrice;
     private String[] availableFlags = {"*","B","C","D","I","L","O","S","U","W"};
     
     public MyChunkChunk (Block block, MyChunk instance) {
@@ -31,6 +33,14 @@ public class MyChunkChunk {
         String[] thisDims = {chunkWorld, chunkX+"", chunkZ+""};
         dims = thisDims;
         owner = plugin.chunkStore.getString(this.dimsToConfigString() + ".owner", "Unowned");
+        Double price = plugin.chunkStore.getDouble(this.dimsToConfigString() + ".forsale");
+        if (price == 0) {
+            claimPrice = plugin.chunkPrice;
+            forSale = false;
+        } else {
+            claimPrice = price;
+            forSale = true;
+        }
         String allowedString = plugin.chunkStore.getString(this.dimsToConfigString() + ".allowed", "");
         if (!allowedString.equals("")) {
             for (String allowedPlayer : allowedString.split(";")) {
@@ -51,10 +61,14 @@ public class MyChunkChunk {
     }
     
     public void claim(String playerName) {
+        if (!this.isClaimed()) {
+            plugin.claimedChunks++;
+        }
         this.owner = playerName;
         plugin.chunkStore.set(this.dimsToConfigString() + ".owner", playerName);
-        plugin.claimedChunks++;
         plugin.chunkStore.set("TotalOwned", plugin.claimedChunks);
+        forSale = false;
+        plugin.chunkStore.set(this.dimsToConfigString() + ".forsale", null);
         plugin.saveChunkStore();
         if (chunkNE.isLiquid() || chunkNE.getTypeId() == 79) {
             chunkNE.setTypeId(4);
@@ -190,15 +204,6 @@ public class MyChunkChunk {
         savePerms();
     }
     
-    public String[] getNeighbours() {
-        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(5, 64, 5), plugin);
-        String[] neighbours = {chunkX1.getOwner(), chunkX2.getOwner(), chunkZ1.getOwner(), chunkZ2.getOwner()};
-        return neighbours;
-    }
-    
     public String getAllowed() {
         String allowedPlayers = "";
         Object[] players = allowed.keySet().toArray();
@@ -244,6 +249,19 @@ public class MyChunkChunk {
         } else {
             return ChatColor.RED + "NONE";
         }
+    }
+    
+    public double getClaimPrice() {
+        return claimPrice;
+    }
+    
+    public String[] getNeighbours() {
+        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(5, 64, 5), plugin);
+        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(5, 64, 5), plugin);
+        String[] neighbours = {chunkX1.getOwner(), chunkX2.getOwner(), chunkZ1.getOwner(), chunkZ2.getOwner()};
+        return neighbours;
     }
     
     public String getOwner() {
@@ -313,6 +331,17 @@ public class MyChunkChunk {
             }
         }
         return false;
+    }
+    
+    public boolean isForSale() {
+        return forSale;
+    }
+    
+    public void setForSale(Double price) {
+        forSale = true;
+        claimPrice = price;
+        plugin.chunkStore.set(this.dimsToConfigString() + ".forsale", price);
+        plugin.saveChunkStore();
     }
     
     public void setOwner (String newOwner) {

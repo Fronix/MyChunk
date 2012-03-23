@@ -14,3 +14,4 @@
 chunk_price: 0.00
 unclaim_refund: false
 max_chunks: 8
+allow_neighbours: false
