@@ -354,6 +354,12 @@ public class MyChunkChunk {
         plugin.saveChunkStore();
     }
     
+    public void setNotForSale() {
+        forSale = false;
+        plugin.chunkStore.set(this.dimsToConfigString() + ".forsale", null);
+        plugin.saveChunkStore();
+    }
+    
     public void setOwner (String newOwner) {
         if (isClaimed()) {
             plugin.chunkStore.set(this.dimsToConfigString() + ".owner", newOwner);

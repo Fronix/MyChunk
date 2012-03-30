@@ -15,7 +15,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.block.*;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityBreakDoorEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -676,8 +679,6 @@ public class MyChunkListener implements Listener {
                     
                 }
                 if (allowed) {
-                    event.setLine(0, ChatColor.GOLD + "[For Sale]");
-                    event.setLine(1, ChatColor.GOLD + price.toString());
                     if (plugin.foundEconomy) {
                         player.sendMessage(ChatColor.GOLD + "Chunk on sale for " + plugin.vault.economy.format(price) + "!");
                         chunk.setForSale(price);
@@ -685,6 +686,26 @@ public class MyChunkListener implements Listener {
                         player.sendMessage(ChatColor.GOLD + "Chunk on sale!");
                         chunk.setForSale(plugin.chunkPrice);
                     }
+                    breakSign(event.getBlock());
+                }
+            } else if (line0.equalsIgnoreCase("[not for sale]")) {
+                Player player = event.getPlayer();
+                MyChunkChunk chunk = new MyChunkChunk(event.getBlock(), plugin);
+                boolean allowed = true;
+                if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                    player.sendMessage(ChatColor.RED + "You don't own this chunk!");
+                    event.setCancelled(true);
+                    breakSign(event.getBlock());
+                    allowed = false;
+                } else if (!chunk.isForSale()) {
+                    player.sendMessage(ChatColor.RED + "This chunk is not for sale!");
+                    event.setCancelled(true);
+                    breakSign(event.getBlock());
+                    allowed = false;
+                }
+                if (allowed) {
+                    player.sendMessage(ChatColor.GOLD + "Chunk taken off sale!");
+                    chunk.setNotForSale();
                     breakSign(event.getBlock());
                 }
             }
