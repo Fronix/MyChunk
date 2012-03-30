@@ -384,11 +384,11 @@ public class MyChunkListener implements Listener {
                 if (allowed) {
                     if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                         int ownedChunks = plugin.ownedChunks(player.getName());
-                        if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.unlimited") || plugin.maxChunks == 0) {
+                        if ((ownedChunks < plugin.maxChunks || (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy"))) || player.hasPermission("mychunk.claim.unlimited") || plugin.maxChunks == 0) {
                             if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && plugin.ownedChunks(player.getName()) < plugin.maxChunks) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getClaimPrice());
                                 player.sendMessage(plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + " was deducted from your account");
-                            } else if (plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks && !player.hasPermission("mychunk.free")) {
+                            } else if (plugin.foundEconomy && plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks && !player.hasPermission("mychunk.free")) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getOverbuyPrice());
                                 player.sendMessage(plugin.vault.economy.format(chunk.getOverbuyPrice()) + ChatColor.GOLD + " was deducted from your account");
                             }
