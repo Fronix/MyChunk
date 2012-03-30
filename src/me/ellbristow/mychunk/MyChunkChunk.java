@@ -255,6 +255,16 @@ public class MyChunkChunk {
         return claimPrice;
     }
     
+    public double getOverbuyPrice() {
+        double price;
+        if (plugin.allowOverbuy) {
+            price = claimPrice + plugin.overbuyPrice;
+        } else {
+            price = claimPrice;
+        }
+        return price;
+    }
+    
     public String[] getNeighbours() {
         MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
         MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);

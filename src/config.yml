@@ -5,13 +5,21 @@
 # 
 # = Configuration Options =
 # 
-# chunk_price : How much does a chunk cost to claim? (Default = 0.00)
+# chunk_price : How much does a chunk cost to claim? (Requires Vault + Economy. Default = 0.00)
 # 
 # unclaim_refund : Do players get a refund when they unclaim a chunk? true|false (Default = false)
 # 
 # max_chunks: What is the maximum number of chunks a player can claim (excluding server) 0 = Unlimited
+# 
+# allow_neighbours: Allow players to claim chunks next to each other
+# 
+# allow_overbuy: Allow players to buy more than max_chunks at a higher price (Requires Vault + Economy)
+# 
+# overbuy_price: price for buying chunks above chunk limit. This amount is ADDED to any chunk price (including [For Sale])
 
 chunk_price: 0.00
 unclaim_refund: false
 max_chunks: 8
 allow_neighbours: false
+allow_overbuy: false
+overbuy_price: 0.00

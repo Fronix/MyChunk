@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 1.0.0
+version: 1.0.1
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -60,8 +60,16 @@ permissions:
     default: op
     children:
       mychunk.commands.toggle.refund: true
+      mychunk.commands.toggle.overbuy: true
+      mychunk.commands.toggle.neighbours: true
   mychunk.commands.toggle.refund:
     description: Access to command /mychunk toggle refund
+    default: op
+  mychunk.commands.toggle.overbuy:
+    description: Access to command /mychunk toggle overbuy
+    default: op
+  mychunk.commands.toggle.neighbours:
+    description: Access to command /mychunk toggle neighbours
     default: op
 
 # Claim Permissions
@@ -74,6 +82,7 @@ permissions:
        mychunk.claim.server: true
        mychunk.claim.unlimited: true
        mychunk.claim.others.unlimited: true
+       mychunk.claim.overbuy: true
   mychunk.claim:
     description: Can claim chunks
     default: op
@@ -88,6 +97,9 @@ permissions:
     default: op
   mychunk.claim.server:
     description: Can claim chunks for the server
+    default: op
+  mychunk.claim.overbuy:
+    description: Can buy more than the max limit for the overbuy price
     default: op
 
 # Resale Permissions

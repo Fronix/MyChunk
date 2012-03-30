@@ -25,7 +25,9 @@ public class MyChunk extends JavaPlugin {
     public boolean foundEconomy = false;
     public boolean unclaimRefund = false;
     public boolean allowNeighbours = false;
+    public boolean allowOverbuy = false;
     public double chunkPrice = 0.00;
+    public double overbuyPrice = 0.00;
     public int maxChunks = 8;
     public MyChunkVaultLink vault;
     
@@ -56,6 +58,10 @@ public class MyChunk extends JavaPlugin {
                 config.set("chunk_price", chunkPrice);
                 unclaimRefund = config.getBoolean("unclaim_refund", false);
                 config.set("unclaim_refund", unclaimRefund);
+                allowOverbuy = config.getBoolean("allow_overbuy", false);
+                config.set("allow_overbuy", allowOverbuy);
+                overbuyPrice = config.getDouble("overbuy_price", 0.00);
+                config.set("overbuyPrice", overbuyPrice);
             } else {
                 logger.info("No economy plugin found! Chunks will be free");
             }
@@ -82,8 +88,11 @@ public class MyChunk extends JavaPlugin {
                 }
                 sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
                 sender.sendMessage(ChatColor.GOLD + "Maxiumum chunks per player: " + ChatColor.WHITE + maxChunks);
+                sender.sendMessage(ChatColor.GOLD + "Allow Neighbours: " + ChatColor.WHITE + allowNeighbours);
                 if (foundEconomy) {
                     sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
+                    sender.sendMessage(ChatColor.GOLD + "Allow Overbuy: " + ChatColor.WHITE + allowOverbuy);
+                    sender.sendMessage(ChatColor.GOLD + "Overbuy Price: " + ChatColor.WHITE + vault.economy.format(overbuyPrice));
                     String paid = "No";
                     if (unclaimRefund) {
                         paid = "Yes";
@@ -118,8 +127,7 @@ public class MyChunk extends JavaPlugin {
                 return false;
             } else if (args[0].equalsIgnoreCase("toggle")) {
                 sender.sendMessage(ChatColor.RED + "You must specify what to toggle!");
-                sender.sendMessage(ChatColor.RED + "/mychunk toggle {option}");
-                sender.sendMessage(ChatColor.RED + "e.g. /mychunk toggle refund");
+                sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours}");
                 return false;
             }
         } else if (args.length == 2) {
@@ -156,15 +164,52 @@ public class MyChunk extends JavaPlugin {
                         } else {
                             if (unclaimRefund) {
                                 unclaimRefund = false;
-                                sender.sendMessage(ChatColor.GOLD + "Unclaiming chunks now DOES NOT provide a refund.");
+                                sender.sendMessage(ChatColor.GOLD + "Unclaiming chunks now " + ChatColor.RED + "DOES NOT" + ChatColor.GOLD + " provide a refund.");
                             } else {
                                 unclaimRefund = true;
-                                sender.sendMessage(ChatColor.GOLD + "Unclaiming chunks now provides a refund.");
+                                sender.sendMessage(ChatColor.GOLD + "Unclaiming chunks now " + ChatColor.GREEN + "DOES" + ChatColor.GOLD + " provides a refund.");
                             }
                             config.set("unclaim_refund", unclaimRefund);
                             saveConfig();
                             return true;
                         }
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        return false;
+                    }
+                } else if (args[1].equalsIgnoreCase("refund")) {
+                    if (sender.hasPermission("mychunk.commands.toggle.overbuy")) {
+                        if (!foundEconomy) {
+                            sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
+                            return false;
+                        } else {
+                            if (allowOverbuy) {
+                                allowOverbuy = false;
+                                sender.sendMessage(ChatColor.GOLD + "Buying over the chunk limit is now "+ ChatColor.RED + "disabled");
+                            } else {
+                                allowOverbuy = true;
+                                sender.sendMessage(ChatColor.GOLD + "Buying over the chunk limit is now "+ ChatColor.GREEN + "enabled");
+                            }
+                            config.set("allow_overbuy", allowOverbuy);
+                            saveConfig();
+                            return true;
+                        }
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        return false;
+                    }
+                } else if (args[1].equalsIgnoreCase("neighbours")) {
+                    if (sender.hasPermission("mychunk.commands.toggle.neighbours")) {
+                        if (allowNeighbours) {
+                            allowNeighbours = false;
+                            sender.sendMessage(ChatColor.GOLD + "Claiming chunks next to other players "+ ChatColor.RED + "disabled");
+                        } else {
+                            allowNeighbours = true;
+                            sender.sendMessage(ChatColor.GOLD + "Claiming chunks next to other players "+ ChatColor.GREEN + "enabled");
+                        }
+                        config.set("allow_neighbours", allowNeighbours);
+                        saveConfig();
+                        return true;
                     } else {
                         sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                         return false;

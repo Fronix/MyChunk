@@ -268,7 +268,11 @@ public class MyChunkListener implements Listener {
                     if (toChunk.isForSale()) {
                         forSale = ChatColor.YELLOW + " [Chunk For Sale";
                         if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
-                            forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                            if (plugin.ownedChunks(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy) {
+                                forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                            } else if (plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks) {
+                                forSale += ": " + plugin.vault.economy.format(toChunk.getOverbuyPrice());
+                            }
                         }
                         forSale += "]";
                     }
@@ -280,7 +284,11 @@ public class MyChunkListener implements Listener {
                 } else if (toChunk.isForSale()) {
                     String forSale = ChatColor.YELLOW + "[Chunk For Sale";
                     if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
-                        forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                        if (plugin.ownedChunks(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy || (plugin.allowOverbuy && player.hasPermission("mychunk.free"))) {
+                            forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                        } else if (plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks) {
+                            forSale += ": " + plugin.vault.economy.format(toChunk.getOverbuyPrice());
+                        }
                     }
                     forSale += "]";
                     player.sendMessage(forSale);
@@ -361,17 +369,25 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
-                if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && plugin.vault.economy.getBalance(player.getName()) < chunk.getClaimPrice()) {
+                if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && plugin.ownedChunks(player.getName()) < plugin.maxChunks && plugin.vault.economy.getBalance(player.getName()) < chunk.getClaimPrice()) {
                     player.sendMessage(ChatColor.RED + "You cannot afford to claim that chunk! (Price: " + ChatColor.WHITE + plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.RED + ")!");
                     allowed = false;
+                } else if (plugin.foundEconomy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks && !player.hasPermission("mychunk.free")) {
+                    if (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy") && plugin.vault.economy.getBalance(player.getName()) < chunk.getOverbuyPrice()) {
+                        player.sendMessage(ChatColor.RED + "You cannot afford to claim that chunk! (Price: " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getOverbuyPrice()) + ChatColor.RED + ")!");
+                        allowed = false;
+                    }
                 }
                 if (allowed) {
                     if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                         int ownedChunks = plugin.ownedChunks(player.getName());
                         if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.unlimited") || plugin.maxChunks == 0) {
-                            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free")) {
+                            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && plugin.ownedChunks(player.getName()) < plugin.maxChunks) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getClaimPrice());
                                 player.sendMessage(plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + " was deducted from your account");
+                            } else if (plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks && !player.hasPermission("mychunk.free")) {
+                                plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getOverbuyPrice());
+                                player.sendMessage(plugin.vault.economy.format(chunk.getOverbuyPrice()) + ChatColor.GOLD + " was deducted from your account");
                             }
                             if (plugin.foundEconomy && chunk.isForSale()) {
                                 plugin.vault.economy.depositPlayer(chunk.getOwner(), chunk.getClaimPrice());
