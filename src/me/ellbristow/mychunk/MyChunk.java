@@ -205,7 +205,7 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                         return false;
                     }
-                } else if (args[1].equalsIgnoreCase("refund")) {
+                } else if (args[1].equalsIgnoreCase("overbuy")) {
                     if (sender.hasPermission("mychunk.commands.toggle.overbuy")) {
                         if (!foundEconomy) {
                             sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
