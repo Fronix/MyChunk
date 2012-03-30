@@ -125,6 +125,10 @@ public class MyChunk extends JavaPlugin {
                 sender.sendMessage(ChatColor.RED + "You must specify a new chunk price!");
                 sender.sendMessage(ChatColor.RED + "/mychunk price {new price}");
                 return false;
+            } else if (args[0].equalsIgnoreCase("obprice")) {
+                sender.sendMessage(ChatColor.RED + "You must specify a new overbuy price!");
+                sender.sendMessage(ChatColor.RED + "/mychunk obprice {new price}");
+                return false;
             } else if (args[0].equalsIgnoreCase("toggle")) {
                 sender.sendMessage(ChatColor.RED + "You must specify what to toggle!");
                 sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours}");
@@ -149,6 +153,30 @@ public class MyChunk extends JavaPlugin {
                         chunkPrice = newPrice;
                         saveConfig();
                         sender.sendMessage(ChatColor.GOLD + "Chunk price set to " + vault.economy.format(newPrice));
+                        return true;
+                    }
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    return false;
+                }
+            } else if (args[0].equalsIgnoreCase("obprice")) {
+                if (sender.hasPermission("mychunk.commands.obprice")) {
+                    if (!foundEconomy) {
+                        sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
+                        return false;
+                    } else {
+                        double newPrice = overbuyPrice;
+                        try {
+                            newPrice = Double.parseDouble(args[1]);
+                        } catch (NumberFormatException e) {
+                            sender.sendMessage(ChatColor.RED + "Amount must be a number! (e.g. 5.00)");
+                            sender.sendMessage(ChatColor.RED + "/mychunk obprice {new_price}");
+                            return false;
+                        }
+                        config.set("overbuy_price", newPrice);
+                        overbuyPrice = newPrice;
+                        saveConfig();
+                        sender.sendMessage(ChatColor.GOLD + "Overbuy price set to " + vault.economy.format(newPrice));
                         return true;
                     }
                 } else {
