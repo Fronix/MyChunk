@@ -106,6 +106,8 @@ public class MyChunkListener implements Listener {
                             event.setCancelled(true);
                         }
                     }
+                } else if (event.getCause() == IgniteCause.LAVA || event.getCause() == IgniteCause.SPREAD) {
+                    event.setCancelled(true);
                 }
             }
         }
