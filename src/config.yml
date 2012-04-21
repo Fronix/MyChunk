@@ -16,6 +16,8 @@
 # allow_overbuy: Allow players to buy more than max_chunks at a higher price (Requires Vault + Economy)
 # 
 # overbuy_price: price for buying chunks above chunk limit. This amount is ADDED to any chunk price (including [For Sale])
+# 
+# charge_overbuy_on_reslaes: Do players pay the overbuy fee if buying from other players?
 
 chunk_price: 0.00
 unclaim_refund: false
@@ -23,3 +25,4 @@ max_chunks: 8
 allow_neighbours: false
 allow_overbuy: false
 overbuy_price: 0.00
+charge_overbuy_on_resales: true

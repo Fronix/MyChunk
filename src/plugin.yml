@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 1.0.6
+version: 1.0.7
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -25,6 +25,7 @@ permissions:
       mychunk.sell: true
       mychunk.server.*: true
       mychunk.unclaim.*: true
+      mychunk.allowmobs: true
   
   mychunk.free:
     description: Player does not pay to claim chunks
@@ -66,12 +67,16 @@ permissions:
     children:
       mychunk.commands.toggle.refund: true
       mychunk.commands.toggle.overbuy: true
+      mychunk.commands.toggle.resales: true
       mychunk.commands.toggle.neighbours: true
   mychunk.commands.toggle.refund:
     description: Access to command /mychunk toggle refund
     default: op
   mychunk.commands.toggle.overbuy:
     description: Access to command /mychunk toggle overbuy
+    default: op
+  mychunk.commands.toggle.resales:
+    description: Access to command /mychunk toggle resales
     default: op
   mychunk.commands.toggle.neighbours:
     description: Access to command /mychunk toggle neighbours
@@ -158,4 +163,9 @@ permissions:
     default: op
   mychunk.unclaim.server:
     description: Can unclaim chunks for other players
+    default: op
+
+# Speical Sign Permissions
+  mychunk.allowmobs:
+    description: Can use [AllowMobs] signs
     default: op

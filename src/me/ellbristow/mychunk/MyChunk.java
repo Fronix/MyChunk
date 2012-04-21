@@ -3,7 +3,6 @@ package me.ellbristow.mychunk;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -16,7 +15,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class MyChunk extends JavaPlugin {
 
     private static MyChunk plugin;
-    private static Logger logger;
     private File chunkFile;
     public FileConfiguration chunkStore;
     public Integer claimedChunks;
@@ -26,6 +24,7 @@ public class MyChunk extends JavaPlugin {
     public boolean unclaimRefund = false;
     public boolean allowNeighbours = false;
     public boolean allowOverbuy = false;
+    public boolean overbuyP2P = true;
     public double chunkPrice = 0.00;
     public double overbuyPrice = 0.00;
     public int maxChunks = 8;
@@ -34,7 +33,6 @@ public class MyChunk extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
-        logger = getLogger();
         chunkStore = getChunkStore();
         getServer().getPluginManager().registerEvents(new MyChunkListener(plugin), plugin);
         claimedChunks = chunkStore.getInt("TotalOwned", 0);
@@ -49,11 +47,11 @@ public class MyChunk extends JavaPlugin {
             foundVault = true;
             vault = new MyChunkVaultLink(this);
             vault.initEconomy();
-            logger.info("[Vault] found and hooked!");
+            getLogger().info("[Vault] found and hooked!");
             if (vault.foundEconomy) {
                 foundEconomy = true;
                 String message = "[" + vault.economyName + "] found and hooked!";
-                logger.info(message);
+                getLogger().info(message);
                 chunkPrice = config.getDouble("chunk_price", 0.00);
                 config.set("chunk_price", chunkPrice);
                 unclaimRefund = config.getBoolean("unclaim_refund", false);
@@ -62,11 +60,13 @@ public class MyChunk extends JavaPlugin {
                 config.set("allow_overbuy", allowOverbuy);
                 overbuyPrice = config.getDouble("overbuy_price", 0.00);
                 config.set("overbuyPrice", overbuyPrice);
+                overbuyP2P = config.getBoolean("charge_overbuy_on_resales", true);
+                config.set("charge_overbuy_on_resales", overbuyP2P);
             } else {
-                logger.info("No economy plugin found! Chunks will be free");
+                getLogger().info("No economy plugin found! Chunks will be free");
             }
         } else {
-            logger.info("Vault not found! Chunks will be free");
+            getLogger().info("Vault not found! Chunks will be free");
         }
         saveConfig();
     }
@@ -87,12 +87,25 @@ public class MyChunk extends JavaPlugin {
                     sender.sendMessage(ChatColor.GOLD + "Chunks You Own: " + ChatColor.WHITE + ownedChunks(sender.getName()));
                 }
                 sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
-                sender.sendMessage(ChatColor.GOLD + "Maxiumum chunks per player: " + ChatColor.WHITE + maxChunks);
+                int playerMax = getMaxChunks(sender);
+                String yourMax = "";
+                if (playerMax != 0) {
+                    yourMax = ChatColor.GRAY + " (Yours: " + playerMax + ")";
+                } else {
+                    yourMax = ChatColor.GRAY + " (Yours: Unlimited)";
+                }
+                sender.sendMessage(ChatColor.GOLD + "Default Max Chunks Per Player: " + ChatColor.WHITE + maxChunks + yourMax);
                 sender.sendMessage(ChatColor.GOLD + "Allow Neighbours: " + ChatColor.WHITE + allowNeighbours);
                 if (foundEconomy) {
                     sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
                     sender.sendMessage(ChatColor.GOLD + "Allow Overbuy: " + ChatColor.WHITE + allowOverbuy);
-                    sender.sendMessage(ChatColor.GOLD + "Overbuy Price: " + ChatColor.WHITE + vault.economy.format(overbuyPrice));
+                    if (allowOverbuy) {
+                        String resales = "exc.";
+                        if (overbuyP2P) {
+                            resales = "inc.";
+                        }
+                        sender.sendMessage(ChatColor.GOLD + "Overbuy Fee: " + ChatColor.WHITE + vault.economy.format(overbuyPrice) + "(" + resales +" resales)");
+                    }
                     String paid = "No";
                     if (unclaimRefund) {
                         paid = "Yes";
@@ -131,7 +144,7 @@ public class MyChunk extends JavaPlugin {
                 return false;
             } else if (args[0].equalsIgnoreCase("toggle")) {
                 sender.sendMessage(ChatColor.RED + "You must specify what to toggle!");
-                sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours}");
+                sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours|resales}");
                 return false;
             }
         } else if (args.length == 2) {
@@ -141,7 +154,7 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
                         return false;
                     } else {
-                        double newPrice = chunkPrice;
+                        double newPrice;
                         try {
                             newPrice = Double.parseDouble(args[1]);
                         } catch (NumberFormatException e) {
@@ -165,7 +178,7 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
                         return false;
                     } else {
-                        double newPrice = overbuyPrice;
+                        double newPrice;
                         try {
                             newPrice = Double.parseDouble(args[1]);
                         } catch (NumberFormatException e) {
@@ -226,6 +239,30 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                         return false;
                     }
+                } else if (args[1].equalsIgnoreCase("resales")) {
+                    if (sender.hasPermission("mychunk.commands.toggle.resales")) {
+                        if (!foundEconomy) {
+                            sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
+                            return false;
+                        }
+                        if (!allowOverbuy) {
+                            sender.sendMessage(ChatColor.RED + "Overbuying is disabled! Command aborted.");
+                            return false;
+                        }
+                        if (overbuyP2P) {
+                            overbuyP2P = false;
+                            sender.sendMessage(ChatColor.GOLD + "Overbuy fee when buying from other players is now "+ ChatColor.RED + "disabled");
+                        } else {
+                            overbuyP2P = true;
+                            sender.sendMessage(ChatColor.GOLD + "Overbuy fee when buying from other players is now "+ ChatColor.GREEN + "enabled");
+                        }
+                        config.set("charge_overbuy_on_resales", overbuyP2P);
+                        saveConfig();
+                        return true;
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        return false;
+                    }
                 } else if (args[1].equalsIgnoreCase("neighbours")) {
                     if (sender.hasPermission("mychunk.commands.toggle.neighbours")) {
                         if (allowNeighbours) {
@@ -245,7 +282,7 @@ public class MyChunk extends JavaPlugin {
                 }
             } else if (args[0].equalsIgnoreCase("max")) {
                 if (sender.hasPermission("mychunk.commands.max")) {
-                    int newMax = maxChunks;
+                    int newMax;
                     try {
                         newMax = Integer.parseInt(args[1]);
                     } catch (NumberFormatException e) {
@@ -280,6 +317,24 @@ public class MyChunk extends JavaPlugin {
         return owned;
     }
     
+    public int getMaxChunks(CommandSender player) {
+        int max = maxChunks;
+        if (player instanceof Player) {
+            if (player.hasPermission("mychunk.claim.max.0") || player.hasPermission("mychunk.claim.unlimited")) {
+                max = 0;
+            } else {
+                for (int i = 1; i <= 256; i++) {
+                    if (player.hasPermission("mychunk.claim.max." + i)) {
+                        max = i;
+                    }
+                }
+            }
+        } else {
+            max = 0;
+        }
+        return max;
+    }
+    
     protected void loadChunkStore() {
         if (chunkFile == null) {
             chunkFile = new File(getDataFolder(),"chunks.yml");
@@ -301,7 +356,7 @@ public class MyChunk extends JavaPlugin {
         try {
             chunkStore.save(chunkFile);
         } catch (IOException ex) {
-            logger.log(Level.SEVERE, "Could not save " + chunkFile, ex );
+            getLogger().log(Level.SEVERE, "Could not save " + chunkFile, ex );
         }
     }    
 }

@@ -23,6 +23,7 @@ public class MyChunkChunk {
     private boolean forSale;
     private double claimPrice;
     private String[] availableFlags = {"*","B","C","D","I","L","O","S","U","W"};
+    private boolean allowMobs;
     
     public MyChunkChunk (Block block, MyChunk instance) {
         plugin = instance;
@@ -58,6 +59,7 @@ public class MyChunkChunk {
         chunkSE = findCorner("SE");
         chunkSW = findCorner("SW");
         chunkNW = findCorner("NW");
+        allowMobs = plugin.chunkStore.getBoolean(this.dimsToConfigString() + ".allowmobs", false);
     }
     
     public void claim(String playerName) {
@@ -249,6 +251,15 @@ public class MyChunkChunk {
         } else {
             return ChatColor.RED + "NONE";
         }
+    }
+    
+    public void setAllowMobs(Boolean allow) {
+        allowMobs = allow;
+        plugin.chunkStore.set(this.dimsToConfigString() + ".allowmobs", allow);
+    }
+    
+    public boolean getAllowMobs() {
+        return allowMobs;
     }
     
     public double getClaimPrice() {
