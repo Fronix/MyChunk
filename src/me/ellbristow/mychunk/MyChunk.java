@@ -88,7 +88,7 @@ public class MyChunk extends JavaPlugin {
                 }
                 sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
                 int playerMax = getMaxChunks(sender);
-                String yourMax = "";
+                String yourMax;
                 if (playerMax != 0) {
                     yourMax = ChatColor.GRAY + " (Yours: " + playerMax + ")";
                 } else {
