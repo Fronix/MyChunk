@@ -230,7 +230,7 @@ public class MyChunkListener implements Listener {
                             event.setCancelled(true);
                         }
                     }
-                } else if (block.getTypeId() == 61 || block.getTypeId() == 23 || block.getTypeId() == 117) {
+                } else if (block.getTypeId() == 61 || block.getTypeId() == 62 || block.getTypeId() == 23 || block.getTypeId() == 117) {
                     MyChunkChunk chunk = new MyChunkChunk(block, plugin);
                     Player player = event.getPlayer();
                     String owner = chunk.getOwner();

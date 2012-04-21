@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 1.1.0
+version: 1.1.1
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -132,6 +132,7 @@ permissions:
       mychunk.server.doors: true
       mychunk.server.ignite: true
       mychunk.server.use: true
+      mychunk.server.special: true
   mychunk.server.build:
     description: Can build in server owned chunks
     default: op
@@ -149,6 +150,9 @@ permissions:
     default: op
   mychunk.server.use:
     description: Can use levers, buttons etc in server owned chunks
+    default: op
+  mychunk.server.special:
+    description: Can access furnaces, dispensers and brewing stands in server owned chunks
     default: op
 
 # Unclaim Permissions
