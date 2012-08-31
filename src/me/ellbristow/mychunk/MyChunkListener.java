@@ -780,7 +780,7 @@ public class MyChunkListener implements Listener {
         Entity remover = event.getRemover();
         if (remover instanceof Player) {
             MyChunkChunk chunk = new MyChunkChunk(event.getPainting().getLocation().getBlock(), plugin);
-            if ((chunk.isClaimed() && !((Player)remover).getName().equals(chunk.getOwner())) || plugin.protectUnclaimed) {
+            if ((chunk.isClaimed() && !((Player)remover).getName().equals(chunk.getOwner()) && !chunk.isAllowed(((Player)remover).getName(), "B")) || plugin.protectUnclaimed) {
                 ((Player)remover).sendMessage(ChatColor.RED + "You do not have permission to break blocks here!");
                 event.setCancelled(true);
             }

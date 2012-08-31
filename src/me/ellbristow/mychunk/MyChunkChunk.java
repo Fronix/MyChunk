@@ -401,7 +401,7 @@ public class MyChunkChunk {
         }
         // First find the highest buildable AIR block in the correct corner
         Block checkBlock = chunk.getBlock( x , y , z );
-        while (checkBlock.getTypeId() != 0) {
+        while (checkBlock.getTypeId() != 0 && y > 0) {
             y--;
             checkBlock = chunk.getBlock( x , y , z );
         }
