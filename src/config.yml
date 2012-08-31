@@ -18,6 +18,10 @@
 # overbuy_price: price for buying chunks above chunk limit. This amount is ADDED to any chunk price (including [For Sale])
 # 
 # charge_overbuy_on_reslaes: Do players pay the overbuy fee if buying from other players?
+#
+# protect_unclaimed: should players ONLY be able to build in claimed chunks? (Mob protections etc do not apply)
+#
+#
 
 chunk_price: 0.00
 unclaim_refund: false
@@ -26,3 +30,4 @@ allow_neighbours: false
 allow_overbuy: false
 overbuy_price: 0.00
 charge_overbuy_on_resales: true
+protect_unclaimed: false

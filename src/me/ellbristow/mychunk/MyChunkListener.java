@@ -19,6 +19,7 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityBreakDoorEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.painting.PaintingBreakByEntityEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -43,7 +44,7 @@ public class MyChunkListener implements Listener {
                 for (Iterator<Block> it = blocks.iterator(); it.hasNext();) {
                     Block block = it.next();
                     MyChunkChunk chunk = new MyChunkChunk(block, plugin);
-                    if (chunk.isClaimed()) {
+                    if (chunk.isClaimed() || plugin.protectUnclaimed) {
                         saveBanks.add(block);
                     }
                     index++;
@@ -60,7 +61,7 @@ public class MyChunkListener implements Listener {
         if (!event.isCancelled()) {
             Block block = event.getBlock();
             MyChunkChunk chunk = new MyChunkChunk(block, plugin);
-            if (chunk.isClaimed() && block.getTypeId() != 51) {
+            if ((chunk.isClaimed() && block.getTypeId() != 51) || plugin.protectUnclaimed) {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B")) {
@@ -79,7 +80,7 @@ public class MyChunkListener implements Listener {
     public void onBlockBreak (BlockBreakEvent event) {
         if (!event.isCancelled()) {
             MyChunkChunk chunk = new MyChunkChunk(event.getBlock(), plugin);
-            if (chunk.isClaimed()) {
+            if (chunk.isClaimed() || plugin.protectUnclaimed) {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D")) {
@@ -96,7 +97,7 @@ public class MyChunkListener implements Listener {
     public void onBlockIgnite (BlockIgniteEvent event) {
         if (!event.isCancelled()) {
             MyChunkChunk chunk = new MyChunkChunk(event.getBlock(), plugin);
-            if (chunk.isClaimed()) {
+            if (chunk.isClaimed() || plugin.protectUnclaimed) {
                 String owner = chunk.getOwner();
                 if (event.getCause() == IgniteCause.FLINT_AND_STEEL) {
                     Player player = event.getPlayer();
@@ -113,26 +114,13 @@ public class MyChunkListener implements Listener {
         }
     }
     
-    @EventHandler (priority = EventPriority.NORMAL)
-    public void onBlockFromTo (BlockFromToEvent event) {
-        if (!event.isCancelled()) {
-            Block sourceBlock = event.getBlock();
-            Block targetBlock = event.getToBlock();
-            MyChunkChunk targetChunk = new MyChunkChunk(targetBlock, plugin);
-            MyChunkChunk sourceChunk = new MyChunkChunk(sourceBlock, plugin);
-            String sourceOwner = sourceChunk.getOwner();
-            String targetOwner = targetChunk.getOwner();
-            if (!sourceOwner.equals(targetOwner) && !targetOwner.equals("Unowned")) {
-                event.setCancelled(true);
-            }
-        }
-    }
+    
     
     @EventHandler (priority = EventPriority.NORMAL)
     public void onZombieDoorEvent (EntityBreakDoorEvent event) {
         if (event.getBlock().getTypeId() == 64 && event.getEntityType().equals(EntityType.ZOMBIE)) {
             MyChunkChunk chunk = new MyChunkChunk(event.getBlock(), plugin);
-            if (chunk.isClaimed()) {
+            if (chunk.isClaimed() || plugin.protectUnclaimed) {
                 event.setCancelled(true);
             }
         }
@@ -150,7 +138,7 @@ public class MyChunkListener implements Listener {
                 targetBlock = block.getRelative(face);
             }
             MyChunkChunk chunk = new MyChunkChunk(targetBlock, plugin);
-            if (chunk.isClaimed()) {
+            if (chunk.isClaimed() || plugin.protectUnclaimed) {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
                 if ((!owner.equalsIgnoreCase(player.getName()) && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
@@ -317,24 +305,38 @@ public class MyChunkListener implements Listener {
     
     @EventHandler (priority = EventPriority.NORMAL)
     public void onPlayerPVP (EntityDamageByEntityEvent event) {
-        if (!event.isCancelled()) {
-            Entity entity = event.getEntity();
-            if (entity instanceof Player) {
-                Player player = (Player)entity;
-                MyChunkChunk chunk = new MyChunkChunk(player.getLocation().getBlock(),plugin);
-                if (chunk.isClaimed()) {
-                    Entity damager = event.getDamager();
-                    if (damager instanceof Player) {
+        if (event.isCancelled())
+            return;
+        Entity entity = event.getEntity();
+        if (entity instanceof Player) {
+            Player player = (Player)entity;
+            MyChunkChunk chunk = new MyChunkChunk(player.getLocation().getBlock(),plugin);
+            if (chunk.isClaimed()) {
+                Entity damager = event.getDamager();
+                if (damager instanceof Player) {
+                    event.setCancelled(true);
+                    Player naughty = (Player)damager;
+                    naughty.sendMessage(ChatColor.RED + "That player is protected by a magic shield!");
+                } else if (damager instanceof Monster) {
+                    if (!chunk.getAllowMobs()) {
                         event.setCancelled(true);
-                        Player naughty = (Player)damager;
-                        naughty.sendMessage(ChatColor.RED + "That player is protected by a magic shield!");
-                    } else if (damager instanceof Monster) {
-                        if (!chunk.getAllowMobs()) {
-                            event.setCancelled(true);
-                        }
                     }
                 }
             }
+        } else if (event.getDamager() instanceof Arrow) {
+
+            MyChunkChunk chunk = new MyChunkChunk(entity.getLocation().getBlock(), plugin);
+            Entity shooter = ((Arrow) event.getDamager()).getShooter();
+            
+            // Stop arrow damage in claimed chunks
+            if (shooter instanceof Player && entity instanceof Player) {
+                event.setCancelled(true);
+            } else if (shooter instanceof Monster) {
+                if (chunk.isClaimed() && !chunk.getAllowMobs()) {
+                    event.setCancelled(true);
+                }
+            }
+
         }
     }
     
@@ -767,6 +769,20 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
+            }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onPaintingBreak(PaintingBreakByEntityEvent event) {
+        if (event.isCancelled())
+            return;
+        Entity remover = event.getRemover();
+        if (remover instanceof Player) {
+            MyChunkChunk chunk = new MyChunkChunk(event.getPainting().getLocation().getBlock(), plugin);
+            if ((chunk.isClaimed() && !((Player)remover).getName().equals(chunk.getOwner())) || plugin.protectUnclaimed) {
+                ((Player)remover).sendMessage(ChatColor.RED + "You do not have permission to break blocks here!");
+                event.setCancelled(true);
             }
         }
     }

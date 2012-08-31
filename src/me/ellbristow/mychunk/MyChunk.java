@@ -24,6 +24,7 @@ public class MyChunk extends JavaPlugin {
     public boolean unclaimRefund = false;
     public boolean allowNeighbours = false;
     public boolean allowOverbuy = false;
+    public boolean protectUnclaimed = false;
     public boolean overbuyP2P = true;
     public double chunkPrice = 0.00;
     public double overbuyPrice = 0.00;
@@ -43,6 +44,8 @@ public class MyChunk extends JavaPlugin {
         config.set("max_chunks", maxChunks);
         allowNeighbours = config.getBoolean("allow_neighbours", false);
         config.set("allow_neighbours", allowNeighbours);
+        protectUnclaimed = config.getBoolean("protect_unclaimed", false);
+        config.set("protect_unlcaimed", protectUnclaimed);
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
             foundVault = true;
             vault = new MyChunkVaultLink(this);
@@ -96,6 +99,7 @@ public class MyChunk extends JavaPlugin {
                 }
                 sender.sendMessage(ChatColor.GOLD + "Default Max Chunks Per Player: " + ChatColor.WHITE + maxChunks + yourMax);
                 sender.sendMessage(ChatColor.GOLD + "Allow Neighbours: " + ChatColor.WHITE + allowNeighbours);
+                sender.sendMessage(ChatColor.GOLD + "Protect Unclaimed: " + ChatColor.WHITE + protectUnclaimed);
                 if (foundEconomy) {
                     sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
                     sender.sendMessage(ChatColor.GOLD + "Allow Overbuy: " + ChatColor.WHITE + allowOverbuy);
@@ -273,6 +277,22 @@ public class MyChunk extends JavaPlugin {
                             sender.sendMessage(ChatColor.GOLD + "Claiming chunks next to other players "+ ChatColor.GREEN + "enabled");
                         }
                         config.set("allow_neighbours", allowNeighbours);
+                        saveConfig();
+                        return true;
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        return false;
+                    }
+                } else if (args[1].equalsIgnoreCase("unclaimed")) {
+                    if (sender.hasPermission("mychunk.commands.toggle.unclaimed")) {
+                        if (protectUnclaimed) {
+                            protectUnclaimed = false;
+                            sender.sendMessage(ChatColor.GOLD + "Unclaimed chunks are now "+ChatColor.RED+"NOT"+ChatColor.GOLD+" protected");
+                        } else {
+                            protectUnclaimed = true;
+                            sender.sendMessage(ChatColor.GOLD + "Unclaimed chunks are now "+ChatColor.GREEN+"protected");
+                        }
+                        config.set("protect_unclaimed", protectUnclaimed);
                         saveConfig();
                         return true;
                     } else {
