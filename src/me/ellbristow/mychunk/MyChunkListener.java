@@ -394,7 +394,7 @@ public class MyChunkListener implements Listener {
                     if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                         int ownedChunks = plugin.ownedChunks(player.getName());
                         if ((ownedChunks < playerMax || (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy"))) || player.hasPermission("mychunk.claim.unlimited") || playerMax == 0) {
-                            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && plugin.ownedChunks(player.getName()) < playerMax) {
+                            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunks(player.getName()) < playerMax)) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getClaimPrice());
                                 player.sendMessage(plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + " was deducted from your account");
                             } else if (plugin.foundEconomy && plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= playerMax && !player.hasPermission("mychunk.free")) {
