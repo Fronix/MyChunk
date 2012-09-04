@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.logging.Level;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -162,6 +164,14 @@ public class MyChunk extends JavaPlugin {
             } else if (args[0].equalsIgnoreCase("toggle")) {
                 sender.sendMessage(ChatColor.RED + "You must specify what to toggle!");
                 sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours|resales|unclaimed|expiry}");
+                return false;
+            } else if (args[0].equalsIgnoreCase("purgep")) {
+                sender.sendMessage(ChatColor.RED + "You must specify which player to purge!");
+                sender.sendMessage(ChatColor.RED + "/mychunk purgep [Player Name]");
+                return false;
+            } else if (args[0].equalsIgnoreCase("purgew")) {
+                sender.sendMessage(ChatColor.RED + "You must specify which world to purge!");
+                sender.sendMessage(ChatColor.RED + "/mychunk purgep [World Name]");
                 return false;
             }
         } else if (args.length == 2) {
@@ -379,6 +389,45 @@ public class MyChunk extends JavaPlugin {
                     sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                     return false;
                 }
+            } else if (args[0].equalsIgnoreCase("purgep")) {
+                if (!sender.hasPermission("mychunk.commands.purgep")) {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    return false;
+                }
+                OfflinePlayer player = getServer().getOfflinePlayer(args[1]);
+                if (!player.hasPlayedBefore()) {
+                    sender.sendMessage(ChatColor.RED + "Player "+ChatColor.WHITE+args[1]+ChatColor.RED+" not found!");
+                    return false;
+                }
+                Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+                for (int i = 1; i < allChunks.length; i++) {
+                    String thisOwner = plugin.chunkStore.getString(allChunks[i] + ".owner");
+                    if (args[1].equalsIgnoreCase(thisOwner)) {
+                        plugin.chunkStore.set(String.valueOf(allChunks[i]), null);
+                    }
+                }
+                saveChunkStore();
+                sender.sendMessage(ChatColor.GOLD + "All chunks for " + ChatColor.WHITE + player.getName() + ChatColor.GOLD + " are now Unowned!");
+            }  else if (args[0].equalsIgnoreCase("purgew")) {
+                if (!sender.hasPermission("mychunk.commands.purgew")) {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    return false;
+                }
+                World world = getServer().getWorld(args[1]);
+                if (world == null) {
+                    sender.sendMessage(ChatColor.RED + "World "+ChatColor.WHITE+args[1]+ChatColor.RED+" not found!");
+                    return false;
+                }
+                String worldName = world.getName();
+                Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+                for (int i = 1; i < allChunks.length; i++) {
+                    String[] chunkSplit = String.valueOf(allChunks[i]).split("_");
+                    if (worldName.equalsIgnoreCase(chunkSplit[0])) {
+                        plugin.chunkStore.set(String.valueOf(allChunks[i]), null);
+                    }
+                }
+                saveChunkStore();
+                sender.sendMessage(ChatColor.GOLD + "All chunks in " + ChatColor.WHITE + worldName + ChatColor.GOLD + " are now Unowned!");
             }
         }
         return false;
@@ -397,7 +446,7 @@ public class MyChunk extends JavaPlugin {
         Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
         for (int i = 1; i < allChunks.length; i++) {
             String thisOwner = plugin.chunkStore.getString(allChunks[i] + ".owner");
-            if (playerName.equals(thisOwner)) {
+            if (playerName.equalsIgnoreCase(thisOwner)) {
                 owned++;
             }
         }
