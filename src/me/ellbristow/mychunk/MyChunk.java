@@ -2,6 +2,7 @@ package me.ellbristow.mychunk;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -16,20 +17,22 @@ public class MyChunk extends JavaPlugin {
 
     private static MyChunk plugin;
     private File chunkFile;
-    public FileConfiguration chunkStore;
-    public Integer claimedChunks;
-    public FileConfiguration config;
-    public boolean foundVault = false;
-    public boolean foundEconomy = false;
-    public boolean unclaimRefund = false;
-    public boolean allowNeighbours = false;
-    public boolean allowOverbuy = false;
-    public boolean protectUnclaimed = false;
-    public boolean overbuyP2P = true;
-    public double chunkPrice = 0.00;
-    public double overbuyPrice = 0.00;
-    public int maxChunks = 8;
-    public MyChunkVaultLink vault;
+    protected FileConfiguration chunkStore;
+    protected Integer claimedChunks;
+    protected FileConfiguration config;
+    protected boolean foundVault = false;
+    protected boolean foundEconomy = false;
+    protected boolean unclaimRefund = false;
+    protected boolean allowNeighbours = false;
+    protected boolean allowOverbuy = false;
+    protected boolean protectUnclaimed = false;
+    protected boolean useClaimExpiry = false;
+    protected int claimExpiryDays;
+    protected boolean overbuyP2P = true;
+    protected double chunkPrice = 0.00;
+    protected double overbuyPrice = 0.00;
+    protected int maxChunks = 8;
+    protected MyChunkVaultLink vault;
     
     @Override
     public void onEnable() {
@@ -46,6 +49,10 @@ public class MyChunk extends JavaPlugin {
         config.set("allow_neighbours", allowNeighbours);
         protectUnclaimed = config.getBoolean("protect_unclaimed", false);
         config.set("protect_unlcaimed", protectUnclaimed);
+        useClaimExpiry = config.getBoolean("useClaimExpiry", false);
+        config.set("useClaimExpiry", useClaimExpiry);
+        claimExpiryDays = config.getInt("claimExpiresAfter", 7);
+        config.set("claimExpiresAfter", claimExpiryDays);
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
             foundVault = true;
             vault = new MyChunkVaultLink(this);
@@ -87,7 +94,7 @@ public class MyChunk extends JavaPlugin {
                 sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " by " + ChatColor.WHITE + "ellbristow");
                 sender.sendMessage("============================");
                 if (sender instanceof Player) {
-                    sender.sendMessage(ChatColor.GOLD + "Chunks You Own: " + ChatColor.WHITE + ownedChunks(sender.getName()));
+                    sender.sendMessage(ChatColor.GOLD + "Chunks You Own: " + ChatColor.WHITE + ownedChunkCount(sender.getName()));
                 }
                 sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
                 int playerMax = getMaxChunks(sender);
@@ -98,8 +105,7 @@ public class MyChunk extends JavaPlugin {
                     yourMax = ChatColor.GRAY + " (Yours: Unlimited)";
                 }
                 sender.sendMessage(ChatColor.GOLD + "Default Max Chunks Per Player: " + ChatColor.WHITE + maxChunks + yourMax);
-                sender.sendMessage(ChatColor.GOLD + "Allow Neighbours: " + ChatColor.WHITE + allowNeighbours);
-                sender.sendMessage(ChatColor.GOLD + "Protect Unclaimed: " + ChatColor.WHITE + protectUnclaimed);
+                sender.sendMessage(ChatColor.GOLD + "Allow Neighbours: " + ChatColor.WHITE + allowNeighbours + ChatColor.GOLD + "Protect Unclaimed: " + ChatColor.WHITE + protectUnclaimed);
                 if (foundEconomy) {
                     sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
                     sender.sendMessage(ChatColor.GOLD + "Allow Overbuy: " + ChatColor.WHITE + allowOverbuy);
@@ -116,6 +122,13 @@ public class MyChunk extends JavaPlugin {
                     }
                     sender.sendMessage(ChatColor.GOLD + "Unclaim Refunds: " + ChatColor.WHITE + paid);
                 }
+                String claimExpiry;
+                if (!useClaimExpiry) {
+                    claimExpiry = "Disabled";
+                } else {
+                    claimExpiry = claimExpiryDays + " day(s) with no login";
+                }
+                sender.sendMessage(ChatColor.GOLD + "Claim Expiry: " + ChatColor.WHITE + claimExpiry);
                 
                 return true;
             } else {
@@ -148,7 +161,7 @@ public class MyChunk extends JavaPlugin {
                 return false;
             } else if (args[0].equalsIgnoreCase("toggle")) {
                 sender.sendMessage(ChatColor.RED + "You must specify what to toggle!");
-                sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours|resales}");
+                sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours|resales|unclaimed|expiry}");
                 return false;
             }
         } else if (args.length == 2) {
@@ -299,6 +312,24 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                         return false;
                     }
+                } else if (args[1].equalsIgnoreCase("expiry")) {
+                    if (sender.hasPermission("mychunk.commands.toggle.expiry")) {
+                        if (useClaimExpiry) {
+                            useClaimExpiry = false;
+                            sender.sendMessage(ChatColor.GOLD + "Claimed chunks will now "+ChatColor.RED+"NOT"+ChatColor.GOLD+" expire after inactivity");
+                        } else {
+                            useClaimExpiry = true;
+                            sender.sendMessage(ChatColor.GOLD + "Claimed chunks "+ChatColor.GREEN+"WILL"+ChatColor.GOLD+" now expire after " + claimExpiryDays + " days of inactivity");
+                            renewAllOwnerships();
+                            sender.sendMessage(ChatColor.GOLD + "All activity records have been reset to this time");
+                        }
+                        config.set("useClaimExpiry", useClaimExpiry);
+                        saveConfig();
+                        return true;
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        return false;
+                    }
                 }
             } else if (args[0].equalsIgnoreCase("max")) {
                 if (sender.hasPermission("mychunk.commands.max")) {
@@ -320,12 +351,48 @@ public class MyChunk extends JavaPlugin {
                     sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
                     return false;
                 }
+            } else if (args[0].equalsIgnoreCase("expiryDays")) {
+                if (sender.hasPermission("mychunk.commands.expirydays")) {
+                    if (!useClaimExpiry) {
+                        sender.sendMessage(ChatColor.RED + "Claim expiry is disabled!");
+                        return true;
+                    }
+                    int newDays;
+                    try {
+                        newDays = Integer.parseInt(args[1]);
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(ChatColor.RED + "Amount must be an integer!");
+                        sender.sendMessage(ChatColor.RED + "/mychunk expirydays {new_days}");
+                        return false;
+                    }
+                    if (newDays <= 0) {
+                        sender.sendMessage(ChatColor.RED + "Amount must be greater than 0!");
+                        sender.sendMessage(ChatColor.RED + "/mychunk expirydays {new_days}");
+                        return false;
+                    }
+                    config.set("claimExpiresAfter", newDays);
+                    claimExpiryDays = newDays;
+                    sender.sendMessage(ChatColor.GOLD + "Claimed chunks will now expire after " + ChatColor.GREEN + claimExpiryDays + ChatColor.GOLD + " days of inactivity");
+                    saveConfig();
+                    return true;
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    return false;
+                }
             }
         }
         return false;
     }
     
-    public int ownedChunks(String playerName) {
+    private void renewAllOwnerships() {
+        Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+        for (int i = 1; i < allChunks.length; i++) {
+            plugin.chunkStore.set(allChunks[i] + ".lastActive", new Date().getTime() / 1000);
+        }
+        plugin.saveChunkStore();
+    }
+    
+    public int ownedChunkCount(String playerName) {
         int owned = 0;
         Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
         for (int i = 1; i < allChunks.length; i++) {

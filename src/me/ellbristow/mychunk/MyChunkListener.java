@@ -1,12 +1,7 @@
 package me.ellbristow.mychunk;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
+import java.util.*;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
@@ -20,10 +15,7 @@ import org.bukkit.event.entity.EntityBreakDoorEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.painting.PaintingBreakByEntityEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
 public class MyChunkListener implements Listener {
@@ -261,9 +253,9 @@ public class MyChunkListener implements Listener {
                     if (toChunk.isForSale()) {
                         forSale = ChatColor.YELLOW + " [Chunk For Sale";
                         if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
-                            if (plugin.ownedChunks(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy) {
+                            if (plugin.ownedChunkCount(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy) {
                                 forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
-                            } else if (plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks) {
+                            } else if (plugin.allowOverbuy && plugin.ownedChunkCount(player.getName()) >= plugin.maxChunks) {
                                 forSale += ": " + plugin.vault.economy.format(toChunk.getOverbuyPrice());
                             }
                         }
@@ -277,9 +269,9 @@ public class MyChunkListener implements Listener {
                 } else if (toChunk.isForSale()) {
                     String forSale = ChatColor.YELLOW + "[Chunk For Sale";
                     if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
-                        if (plugin.ownedChunks(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy || (plugin.allowOverbuy && player.hasPermission("mychunk.free"))) {
+                        if (plugin.ownedChunkCount(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy || (plugin.allowOverbuy && player.hasPermission("mychunk.free"))) {
                             forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
-                        } else if (plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= plugin.maxChunks) {
+                        } else if (plugin.allowOverbuy && plugin.ownedChunkCount(player.getName()) >= plugin.maxChunks) {
                             forSale += ": " + plugin.vault.economy.format(toChunk.getOverbuyPrice());
                         }
                     }
@@ -381,10 +373,10 @@ public class MyChunkListener implements Listener {
                     }
                 }
                 int playerMax = plugin.getMaxChunks(player);
-                if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunks(player.getName()) < playerMax) && plugin.vault.economy.getBalance(player.getName()) < chunk.getClaimPrice()) {
+                if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunkCount(player.getName()) < playerMax) && plugin.vault.economy.getBalance(player.getName()) < chunk.getClaimPrice()) {
                     player.sendMessage(ChatColor.RED + "You cannot afford to claim that chunk! (Price: " + ChatColor.WHITE + plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.RED + ")!");
                     allowed = false;
-                } else if (plugin.foundEconomy && playerMax != 0 && plugin.ownedChunks(player.getName()) >= playerMax && !player.hasPermission("mychunk.free")) {
+                } else if (plugin.foundEconomy && playerMax != 0 && plugin.ownedChunkCount(player.getName()) >= playerMax && !player.hasPermission("mychunk.free")) {
                     if (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy") && plugin.vault.economy.getBalance(player.getName()) < chunk.getOverbuyPrice()) {
                         player.sendMessage(ChatColor.RED + "You cannot afford to claim that chunk! (Price: " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getOverbuyPrice()) + ChatColor.RED + ")!");
                         allowed = false;
@@ -392,12 +384,12 @@ public class MyChunkListener implements Listener {
                 }
                 if (allowed) {
                     if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
-                        int ownedChunks = plugin.ownedChunks(player.getName());
+                        int ownedChunks = plugin.ownedChunkCount(player.getName());
                         if ((ownedChunks < playerMax || (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy"))) || player.hasPermission("mychunk.claim.unlimited") || playerMax == 0) {
-                            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunks(player.getName()) < playerMax)) {
+                            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunkCount(player.getName()) < playerMax)) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getClaimPrice());
                                 player.sendMessage(plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + " was deducted from your account");
-                            } else if (plugin.foundEconomy && plugin.allowOverbuy && plugin.ownedChunks(player.getName()) >= playerMax && !player.hasPermission("mychunk.free")) {
+                            } else if (plugin.foundEconomy && plugin.allowOverbuy && plugin.ownedChunkCount(player.getName()) >= playerMax && !player.hasPermission("mychunk.free")) {
                                 double price;
                                 if (plugin.overbuyP2P) {
                                     price = chunk.getOverbuyPrice();
@@ -444,7 +436,7 @@ public class MyChunkListener implements Listener {
                             }
                         }
                         if (allowed) {
-                            int ownedChunks = plugin.ownedChunks(player.getName());
+                            int ownedChunks = plugin.ownedChunkCount(player.getName());
                             if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.others.unlimited") || plugin.maxChunks == 0 || (correctName.equalsIgnoreCase("server") && player.hasPermission("mychunk.server.claim"))) {
                                 chunk.claim(correctName);
                                 player.sendMessage(ChatColor.GOLD + "Chunk claimed for " + ChatColor.WHITE + correctName + ChatColor.GOLD + "!");
@@ -780,7 +772,7 @@ public class MyChunkListener implements Listener {
         Entity remover = event.getRemover();
         if (remover instanceof Player) {
             MyChunkChunk chunk = new MyChunkChunk(event.getPainting().getLocation().getBlock(), plugin);
-            if ((chunk.isClaimed() && !((Player)remover).getName().equals(chunk.getOwner()) && !chunk.isAllowed(((Player)remover).getName(), "B")) || plugin.protectUnclaimed) {
+            if (!((Player)remover).hasPermission("mychunk.override") && (chunk.isClaimed() && !((Player)remover).getName().equals(chunk.getOwner()) && !chunk.isAllowed(((Player)remover).getName(), "B")) || plugin.protectUnclaimed) {
                 ((Player)remover).sendMessage(ChatColor.RED + "You do not have permission to break blocks here!");
                 event.setCancelled(true);
             }
@@ -802,10 +794,95 @@ public class MyChunkListener implements Listener {
         }
     }
     
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        if (event.isCancelled())
+            return;
+        if (event.getBlock().getChunk() != event.getBlock().getRelative(event.getDirection()).getChunk()) {
+            MyChunkChunk chunk1 = new MyChunkChunk(event.getBlock(), plugin);
+            MyChunkChunk chunk2 = new MyChunkChunk(event.getBlock().getRelative(event.getDirection()), plugin);
+            if (chunk2.isClaimed() && !chunk1.getOwner().equals(chunk2.getOwner())) {
+                // Pushing into an owned chunk with a different owner
+                event.setCancelled(true);
+                return;
+            }
+        }
+        if (!event.getDirection().equals(BlockFace.UP) && !event.getDirection().equals(BlockFace.DOWN)) {
+            // Pushing Sideways
+            List<Block> blocks = event.getBlocks();
+            for (Block block : blocks) {
+                if (block.getChunk() != block.getRelative(event.getDirection()).getChunk()) {
+                    MyChunkChunk chunk1 = new MyChunkChunk(block, plugin);
+                    MyChunkChunk chunk2 = new MyChunkChunk(block.getRelative(event.getDirection()), plugin);
+                    if (chunk2.isClaimed() && !chunk1.getOwner().equals(chunk2.getOwner())) {
+                        // Pushing into an owned chunk with a different owner
+                        event.setCancelled(true);
+                    }
+                }
+            }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        if (event.isCancelled())
+            return;
+        if (!event.getDirection().equals(BlockFace.UP) && !event.getDirection().equals(BlockFace.DOWN)) {
+            if (event.isSticky()) {
+                if (event.getBlock().getChunk() != event.getRetractLocation().getBlock().getChunk()) {
+                    MyChunkChunk chunk1 = new MyChunkChunk(event.getBlock(), plugin);
+                    MyChunkChunk chunk2 = new MyChunkChunk(event.getRetractLocation().getBlock(), plugin);
+                    if (chunk2.isClaimed() && !chunk1.getOwner().equals(chunk2.getOwner())) {
+                        // Pulling out of an owned chunk with a different owner
+                        event.setCancelled(true);
+                        event.getBlock().setType(Material.PISTON_STICKY_BASE);
+                        switch (event.getDirection()) {
+                            case NORTH:
+                                event.getBlock().setData((byte)4);
+                                break;
+                            case SOUTH:
+                                event.getBlock().setData((byte)5);
+                                break;
+                            case EAST:
+                                event.getBlock().setData((byte)2);
+                                break;
+                            case WEST:
+                                event.getBlock().setData((byte)3);
+                                break;
+                        }
+                        event.getBlock().getRelative(event.getDirection()).setType(Material.AIR);
+                        event.getBlock().getWorld().playSound(event.getBlock().getLocation(), Sound.PISTON_RETRACT, 1, 1);
+                    }
+                }
+            }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onJoin(PlayerJoinEvent event) {
+        refreshOwnership(event.getPlayer().getName());
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onQuit(PlayerQuitEvent event) {
+        refreshOwnership(event.getPlayer().getName());
+    }
+    
     private void breakSign(Block block) {
         if (block.getTypeId() == 63 || block.getTypeId() == 68) {
             block.setTypeId(0);
             block.getWorld().dropItem(block.getLocation(), new ItemStack(323,1));
         }
+    }
+    
+    private void refreshOwnership(String playerName) {
+        Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+        for (int i = 1; i < allChunks.length; i++) {
+            String thisOwner = plugin.chunkStore.getString(allChunks[i] + ".owner");
+            if (playerName.equals(thisOwner)) {
+                plugin.chunkStore.set(allChunks[i] + ".lastActive", new Date().getTime() / 1000);
+            }
+        }
+        plugin.saveChunkStore();
     }
 }

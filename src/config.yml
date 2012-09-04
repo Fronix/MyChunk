@@ -20,6 +20,10 @@
 # charge_overbuy_on_reslaes: Do players pay the overbuy fee if buying from other players?
 #
 # protect_unclaimed: should players ONLY be able to build in claimed chunks? (Mob protections etc do not apply)
+# 
+# useClaimExpiry: Automatically put plots up for sale if the user is inactive
+# 
+# claimExpiresAfter: Days (Real Life) to wait until a plot is put up for sale due to inactivity
 #
 #
 
@@ -31,3 +35,5 @@ allow_overbuy: false
 overbuy_price: 0.00
 charge_overbuy_on_resales: true
 protect_unclaimed: false
+useClaimExpiry: false
+claimExpiresAfter: 7

@@ -1,6 +1,7 @@
 package me.ellbristow.mychunk;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -24,6 +25,7 @@ public class MyChunkChunk {
     private double claimPrice;
     private String[] availableFlags = {"*","B","C","D","I","L","O","S","U","W"};
     private boolean allowMobs;
+    private long lastActive;
     
     public MyChunkChunk (Block block, MyChunk instance) {
         plugin = instance;
@@ -60,6 +62,21 @@ public class MyChunkChunk {
         chunkSW = findCorner("SW");
         chunkNW = findCorner("NW");
         allowMobs = plugin.chunkStore.getBoolean(this.dimsToConfigString() + ".allowmobs", false);
+        
+        // Claim expiry check
+        lastActive = plugin.chunkStore.getLong(this.dimsToConfigString() + ".lastActive", 0);
+        if (!owner.equalsIgnoreCase("Unowned") && !owner.equalsIgnoreCase("Server")){
+            if (lastActive == 0) {
+                lastActive = new Date().getTime() / 1000;
+                plugin.chunkStore.set(this.dimsToConfigString() + ".lastActive", lastActive);
+                plugin.saveChunkStore();
+            }
+            if (plugin.useClaimExpiry) {
+                if (lastActive < new Date().getTime() / 1000 - (plugin.claimExpiryDays * 60 * 60 * 24)) {
+                    forSale = true;
+                }
+            }
+        }
     }
     
     public void claim(String playerName) {
