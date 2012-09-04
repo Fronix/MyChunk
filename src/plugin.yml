@@ -45,6 +45,7 @@ permissions:
       mychunk.commands.obprice: true
       mychunk.commands.max: true
       mychunk.commands.flags: true
+      mychunk.commands.expirydays: true
       mychunk.commands.toggle.*: true
   mychunk.commands.price:
     description: Access to command /mychunk price
