@@ -1,6 +1,7 @@
 package me.ellbristow.mychunk;
 
 import java.util.*;
+
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -56,7 +57,7 @@ public class MyChunkListener implements Listener {
             if ((chunk.isClaimed() && block.getTypeId() != 51) || plugin.protectUnclaimed) {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
-                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B")) {
+                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
                         player.sendMessage(ChatColor.RED + "You do not have permission to build here!");
                         if (block.getTypeId() != 63 && block.getTypeId() != 68) {
@@ -75,7 +76,7 @@ public class MyChunkListener implements Listener {
             if (chunk.isClaimed() || plugin.protectUnclaimed) {
                 String owner = chunk.getOwner();
                 Player player = event.getPlayer();
-                if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D")) {
+                if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
                         player.sendMessage(ChatColor.RED + "You do not have permission to break blocks here!");
                         event.setCancelled(true);
