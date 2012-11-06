@@ -30,6 +30,16 @@ public class MyChunkChunk {
     public MyChunkChunk (Block block, MyChunk instance) {
         plugin = instance;
         chunk = block.getChunk();
+        getFromChunk(chunk);
+    }
+    
+    public MyChunkChunk (String world, int x, int y, MyChunk instance) {
+        plugin = instance;
+        chunk = plugin.getServer().getWorld(world).getChunkAt(x, y);
+        getFromChunk(chunk);
+    }
+    
+    private void getFromChunk(Chunk chunk) {
         chunkWorld = chunk.getWorld().getName();
         chunkX = chunk.getX();
         chunkZ = chunk.getZ();
@@ -49,12 +59,6 @@ public class MyChunkChunk {
             for (String allowedPlayer : allowedString.split(";")) {
                 String[] splitPlayer = allowedPlayer.split(":");
                 allowed.put(splitPlayer[0], splitPlayer[1]);
-            }
-        }
-        String disallowedString = plugin.chunkStore.getString(this.dimsToConfigString() + ".disallowed", "");
-        if (!disallowedString.equals("")) {
-            for (String disallowedPlayer : disallowedString.split(";")) {
-                String[] splitPlayer = disallowedPlayer.split(":");
             }
         }
         chunkNE = findCorner("NE");
@@ -80,12 +84,8 @@ public class MyChunkChunk {
     }
     
     public void claim(String playerName) {
-        if (!this.isClaimed()) {
-            plugin.claimedChunks++;
-        }
         this.owner = playerName;
         plugin.chunkStore.set(this.dimsToConfigString() + ".owner", playerName);
-        plugin.chunkStore.set("TotalOwned", plugin.claimedChunks);
         forSale = false;
         plugin.chunkStore.set(this.dimsToConfigString() + ".forsale", null);
         plugin.saveChunkStore();
@@ -114,8 +114,6 @@ public class MyChunkChunk {
     public void unclaim() {
         owner = "Unowned";
         plugin.chunkStore.set(this.dimsToConfigString(), null);
-        plugin.claimedChunks--;
-        plugin.chunkStore.set("TotalOwned", plugin.claimedChunks);
         plugin.saveChunkStore();
         Block above = chunkNE.getWorld().getBlockAt(chunkNE.getX(), chunkNE.getY()+1, chunkNE.getZ());
         if (above.getTypeId()==50) {
@@ -228,21 +226,21 @@ public class MyChunkChunk {
         Object[] players = allowed.keySet().toArray();
         if (players.length != 0) {
             if ("*".equals((String)players[0])) {
-                allowedPlayers = "EVERYONE(*)";
+                allowedPlayers = plugin.lang.get("Everyone")+"(*)";
             } else {
                 for (Object player : players) {
                     if (player.equals("*")) {
-                        player = "EVERYONE";
+                        player = plugin.lang.get("Everyone");
                     }
                     allowedPlayers += " " + player + "(" + getAllowedFlags((String)player) + ChatColor.GREEN + ")";
                 }
                 allowedPlayers = allowedPlayers.trim();
                 if ("".equals(allowedPlayers)) {
-                    allowedPlayers = "NONE";
+                    allowedPlayers = plugin.lang.get("None");
                 }
             }
         } else {
-            allowedPlayers = "NONE";
+            allowedPlayers = plugin.lang.get("None");
         }
         return allowedPlayers;
     }
@@ -266,7 +264,7 @@ public class MyChunkChunk {
         if (!"".equals(flags)) {
             return ChatColor.GREEN + flags;
         } else {
-            return ChatColor.RED + "NONE";
+            return ChatColor.RED + plugin.lang.get("None");
         }
     }
     

@@ -3,10 +3,12 @@ package me.ellbristow.mychunk;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -17,10 +19,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class MyChunk extends JavaPlugin {
 
-    private static MyChunk plugin;
     private File chunkFile;
     protected FileConfiguration chunkStore;
-    protected Integer claimedChunks;
+    private File langFile;
+    protected FileConfiguration langStore;
     protected FileConfiguration config;
     protected boolean foundVault = false;
     protected boolean foundEconomy = false;
@@ -35,15 +37,21 @@ public class MyChunk extends JavaPlugin {
     protected double overbuyPrice = 0.00;
     protected int maxChunks = 8;
     protected MyChunkVaultLink vault;
+    protected HashMap<String, MyChunkChunk> chunks = new HashMap<String, MyChunkChunk>();
+    protected HashMap<String, String> lang = new HashMap<String, String>();
+    protected HashMap<String, Block> pendingAreas = new HashMap<String, Block>();
     
     @Override
     public void onEnable() {
-        plugin = this;
         chunkStore = getChunkStore();
-        getServer().getPluginManager().registerEvents(new MyChunkListener(plugin), plugin);
-        claimedChunks = chunkStore.getInt("TotalOwned", 0);
-        chunkStore.set("TotalOwned", claimedChunks);
+        chunkStore.set("TotalOwned", null); // Remove Old "TotalOwned" record
         saveChunkStore();
+
+        loadAllChunks();
+        getServer().getPluginManager().registerEvents(new MyChunkListener(this), this);
+        
+        reloadLang();
+        
         config = getConfig();
         maxChunks = config.getInt("max_chunks", 8);
         config.set("max_chunks", maxChunks);
@@ -93,92 +101,99 @@ public class MyChunk extends JavaPlugin {
         if (args.length == 0) {
             if (sender.hasPermission("mychunk.commands.stats")) {
                 PluginDescriptionFile pdfFile = getDescription();
-                sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " by " + ChatColor.WHITE + "ellbristow");
-                sender.sendMessage("============================");
+                sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " "+lang.get("By")+" " + ChatColor.WHITE + "ellbristow");
                 if (sender instanceof Player) {
-                    sender.sendMessage(ChatColor.GOLD + "Chunks You Own: " + ChatColor.WHITE + ownedChunkCount(sender.getName()));
+                    sender.sendMessage(ChatColor.GOLD + lang.get("ChunksOwned")+": " + ChatColor.WHITE + ownedChunkCount(sender.getName()));
                 }
-                sender.sendMessage(ChatColor.GOLD + "Total Claimed Chunks: " + ChatColor.WHITE + claimedChunks);
+                sender.sendMessage(ChatColor.GOLD + lang.get("TotalClaimedChunks")+": " + ChatColor.WHITE + chunks.size());
                 int playerMax = getMaxChunks(sender);
                 String yourMax;
                 if (playerMax != 0) {
-                    yourMax = ChatColor.GRAY + " (Yours: " + playerMax + ")";
+                    yourMax = ChatColor.GRAY + " ("+lang.get("Yours")+": " + playerMax + ")";
                 } else {
-                    yourMax = ChatColor.GRAY + " (Yours: Unlimited)";
+                    yourMax = ChatColor.GRAY + " ("+lang.get("Yours")+": "+lang.get("Unlimited")+")";
                 }
-                sender.sendMessage(ChatColor.GOLD + "Default Max Chunks Per Player: " + ChatColor.WHITE + maxChunks + yourMax);
-                sender.sendMessage(ChatColor.GOLD + "Allow Neighbours: " + ChatColor.WHITE + allowNeighbours + ChatColor.GOLD + "Protect Unclaimed: " + ChatColor.WHITE + protectUnclaimed);
+                sender.sendMessage(ChatColor.GOLD + lang.get("DefaultMax")+": " + ChatColor.WHITE + maxChunks + yourMax);
+                sender.sendMessage(ChatColor.GOLD + lang.get("AllowNeighbours")+": " + ChatColor.WHITE + allowNeighbours + ChatColor.GOLD + " "+lang.get("ProtectUnclaimed")+": " + ChatColor.WHITE + protectUnclaimed);
                 if (foundEconomy) {
-                    sender.sendMessage(ChatColor.GOLD + "Chunk Price: " + ChatColor.WHITE + vault.economy.format(chunkPrice));
-                    sender.sendMessage(ChatColor.GOLD + "Allow Overbuy: " + ChatColor.WHITE + allowOverbuy);
+                    sender.sendMessage(ChatColor.GOLD + lang.get("ChunkPrice")+": " + ChatColor.WHITE + vault.economy.format(chunkPrice));
+                    sender.sendMessage(ChatColor.GOLD + lang.get("AllowOverbuy")+": " + ChatColor.WHITE + allowOverbuy);
                     if (allowOverbuy) {
                         String resales = "exc.";
                         if (overbuyP2P) {
                             resales = "inc.";
                         }
-                        sender.sendMessage(ChatColor.GOLD + "Overbuy Fee: " + ChatColor.WHITE + vault.economy.format(overbuyPrice) + "(" + resales +" resales)");
+                        sender.sendMessage(ChatColor.GOLD + lang.get("OverbuyFee")+": " + ChatColor.WHITE + vault.economy.format(overbuyPrice) + "(" + resales +" "+lang.get("Resales")+")");
                     }
-                    String paid = "No";
+                    String paid = lang.get("No");
                     if (unclaimRefund) {
-                        paid = "Yes";
+                        paid = lang.get("Yes");
                     }
-                    sender.sendMessage(ChatColor.GOLD + "Unclaim Refunds: " + ChatColor.WHITE + paid);
+                    sender.sendMessage(ChatColor.GOLD + lang.get("UnclaimRefunds")+": " + ChatColor.WHITE + paid);
                 }
                 String claimExpiry;
                 if (!useClaimExpiry) {
-                    claimExpiry = "Disabled";
+                    claimExpiry = lang.get("Disabled");
                 } else {
-                    claimExpiry = claimExpiryDays + " day(s) with no login";
+                    claimExpiry = claimExpiryDays + " "+lang.get("DaysWithoutLogin");
                 }
-                sender.sendMessage(ChatColor.GOLD + "Claim Expiry: " + ChatColor.WHITE + claimExpiry);
+                sender.sendMessage(ChatColor.GOLD + lang.get("ClaimExpiry")+": " + ChatColor.WHITE + claimExpiry);
                 
                 return true;
             } else {
-                sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
             }
         } else if (args.length == 1) {
             if (args[0].equalsIgnoreCase("flags")) {
                 if (sender.hasPermission("mychunk.commands.flags")) {
-                    sender.sendMessage(ChatColor.GOLD + "MyChunk Permission Flags");
-                    sender.sendMessage(ChatColor.GOLD + "========================");
-                    sender.sendMessage(ChatColor.GREEN + "*" + ChatColor.GOLD + " = ALL | " + ChatColor.GREEN + "B" + ChatColor.GOLD + " = Build | " + ChatColor.GREEN + "C" + ChatColor.GOLD + " = Access Chests | " + ChatColor.GREEN + "D"  + ChatColor.GOLD + " = Destroy");
-                    sender.sendMessage(ChatColor.GREEN + "I"  + ChatColor.GOLD + " = Ignite Blocks | " + ChatColor.GREEN + "L"  + ChatColor.GOLD + " = Drop Lava | " + ChatColor.GREEN + "O"  + ChatColor.GOLD + " = Open Wooden Doors");
-                    sender.sendMessage(ChatColor.GREEN + "U"  + ChatColor.GOLD + " = Use Buttons/Levers etc | " + ChatColor.GREEN + "W"  + ChatColor.GOLD + " = Drop Water");
+                    sender.sendMessage(ChatColor.GOLD + "MyChunk "+lang.get("PermissionFlags"));
+                    sender.sendMessage(ChatColor.GREEN + "*" + ChatColor.GOLD + " = "+lang.get("All")+" | " + ChatColor.GREEN + "B" + ChatColor.GOLD + " = "+lang.get("Build")+" | " + ChatColor.GREEN + "C" + ChatColor.GOLD + " = "+lang.get("AccessChests")+" | " + ChatColor.GREEN + "D"  + ChatColor.GOLD + " = "+lang.get("Destroy"));
+                    sender.sendMessage(ChatColor.GREEN + "I"  + ChatColor.GOLD + " = "+lang.get("IgniteBlocks")+" | " + ChatColor.GREEN + "L"  + ChatColor.GOLD + " = "+lang.get("DropLava")+" | " + ChatColor.GREEN + "O"  + ChatColor.GOLD + " = "+lang.get("OpenWoodenDoors"));
+                    sender.sendMessage(ChatColor.GREEN + "U"  + ChatColor.GOLD + " = "+lang.get("UseButtonsLevers")+" | " + ChatColor.GREEN + "W"  + ChatColor.GOLD + " = "+lang.get("DropWater"));
                     return true;
                 } else {
-                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                     return false;
                 }
             } else if (args[0].equalsIgnoreCase("max")) {
-                sender.sendMessage(ChatColor.RED + "You must specify a new maximum chunk limit!");
-                sender.sendMessage(ChatColor.RED + "/mychunk max {new limit}");
+                sender.sendMessage(ChatColor.RED + lang.get("SpecifyNewMaxChunks"));
+                sender.sendMessage(ChatColor.RED + "/mychunk max {"+lang.get("NewLimit")+"}");
                 return false;
             } else if (args[0].equalsIgnoreCase("price")) {
-                sender.sendMessage(ChatColor.RED + "You must specify a new chunk price!");
-                sender.sendMessage(ChatColor.RED + "/mychunk price {new price}");
+                sender.sendMessage(ChatColor.RED + lang.get("SpecifyNewChunkPrice"));
+                sender.sendMessage(ChatColor.RED + "/mychunk price {"+lang.get("NewPrice")+"}");
                 return false;
             } else if (args[0].equalsIgnoreCase("obprice")) {
-                sender.sendMessage(ChatColor.RED + "You must specify a new overbuy price!");
-                sender.sendMessage(ChatColor.RED + "/mychunk obprice {new price}");
+                sender.sendMessage(ChatColor.RED + lang.get("SpecifyNewOverbuyPrice"));
+                sender.sendMessage(ChatColor.RED + "/mychunk obprice {"+lang.get("NewPrice")+"}");
                 return false;
             } else if (args[0].equalsIgnoreCase("toggle")) {
-                sender.sendMessage(ChatColor.RED + "You must specify what to toggle!");
+                sender.sendMessage(ChatColor.RED + lang.get("SpecifyToggle"));
                 sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours|resales|unclaimed|expiry}");
                 return false;
             } else if (args[0].equalsIgnoreCase("purgep")) {
-                sender.sendMessage(ChatColor.RED + "You must specify which player to purge!");
-                sender.sendMessage(ChatColor.RED + "/mychunk purgep [Player Name]");
+                sender.sendMessage(ChatColor.RED + lang.get("SpecifyPurgePlayer"));
+                sender.sendMessage(ChatColor.RED + "/mychunk purgep ["+lang.get("PlayerName")+"]");
                 return false;
             } else if (args[0].equalsIgnoreCase("purgew")) {
-                sender.sendMessage(ChatColor.RED + "You must specify which world to purge!");
-                sender.sendMessage(ChatColor.RED + "/mychunk purgep [World Name]");
+                sender.sendMessage(ChatColor.RED + lang.get("SpecifyPurgeWorld"));
+                sender.sendMessage(ChatColor.RED + "/mychunk purgep ["+lang.get("WorldName")+"]");
                 return false;
+            } else if (args[0].equalsIgnoreCase("reload")) {
+                if (!sender.hasPermission("mychunk.commands.reload")) {
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
+                    return true;
+                }
+                chunkStore = getChunkStore();
+                loadAllChunks();
+                reloadLang();
+                sender.sendMessage(ChatColor.GOLD + lang.get("Reloaded"));
             }
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("price")) {
                 if (sender.hasPermission("mychunk.commands.price")) {
                     if (!foundEconomy) {
-                        sender.sendMessage(ChatColor.RED + "There is no economy plugin running! Command aborted.");
+                        sender.sendMessage(ChatColor.RED + lang.get("NoEcoPlugin"));
                         return false;
                     } else {
                         double newPrice;
@@ -196,7 +211,7 @@ public class MyChunk extends JavaPlugin {
                         return true;
                     }
                 } else {
-                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                     return false;
                 }
             } else if (args[0].equalsIgnoreCase("obprice")) {
@@ -220,7 +235,7 @@ public class MyChunk extends JavaPlugin {
                         return true;
                     }
                 } else {
-                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                     return false;
                 }
             } else if (args[0].equalsIgnoreCase("toggle")) {
@@ -242,7 +257,7 @@ public class MyChunk extends JavaPlugin {
                             return true;
                         }
                     } else {
-                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                         return false;
                     }
                 } else if (args[1].equalsIgnoreCase("overbuy")) {
@@ -263,7 +278,7 @@ public class MyChunk extends JavaPlugin {
                             return true;
                         }
                     } else {
-                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                         return false;
                     }
                 } else if (args[1].equalsIgnoreCase("resales")) {
@@ -287,7 +302,7 @@ public class MyChunk extends JavaPlugin {
                         saveConfig();
                         return true;
                     } else {
-                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                         return false;
                     }
                 } else if (args[1].equalsIgnoreCase("neighbours")) {
@@ -303,7 +318,7 @@ public class MyChunk extends JavaPlugin {
                         saveConfig();
                         return true;
                     } else {
-                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                         return false;
                     }
                 } else if (args[1].equalsIgnoreCase("unclaimed")) {
@@ -319,7 +334,7 @@ public class MyChunk extends JavaPlugin {
                         saveConfig();
                         return true;
                     } else {
-                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                         return false;
                     }
                 } else if (args[1].equalsIgnoreCase("expiry")) {
@@ -337,7 +352,7 @@ public class MyChunk extends JavaPlugin {
                         saveConfig();
                         return true;
                     } else {
-                        sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                         return false;
                     }
                 }
@@ -358,7 +373,7 @@ public class MyChunk extends JavaPlugin {
                     saveConfig();
                     return true;
                 } else {
-                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                     return false;
                 }
             } else if (args[0].equalsIgnoreCase("expiryDays")) {
@@ -386,12 +401,12 @@ public class MyChunk extends JavaPlugin {
                     saveConfig();
                     return true;
                 } else {
-                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                     return false;
                 }
             } else if (args[0].equalsIgnoreCase("purgep")) {
                 if (!sender.hasPermission("mychunk.commands.purgep")) {
-                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                     return false;
                 }
                 OfflinePlayer player = getServer().getOfflinePlayer(args[1]);
@@ -399,18 +414,18 @@ public class MyChunk extends JavaPlugin {
                     sender.sendMessage(ChatColor.RED + "Player "+ChatColor.WHITE+args[1]+ChatColor.RED+" not found!");
                     return false;
                 }
-                Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+                Object[] allChunks = chunkStore.getKeys(true).toArray();
                 for (int i = 1; i < allChunks.length; i++) {
-                    String thisOwner = plugin.chunkStore.getString(allChunks[i] + ".owner");
+                    String thisOwner = chunkStore.getString(allChunks[i] + ".owner");
                     if (args[1].equalsIgnoreCase(thisOwner)) {
-                        plugin.chunkStore.set(String.valueOf(allChunks[i]), null);
+                        chunkStore.set(String.valueOf(allChunks[i]), null);
                     }
                 }
                 saveChunkStore();
                 sender.sendMessage(ChatColor.GOLD + "All chunks for " + ChatColor.WHITE + player.getName() + ChatColor.GOLD + " are now Unowned!");
             }  else if (args[0].equalsIgnoreCase("purgew")) {
                 if (!sender.hasPermission("mychunk.commands.purgew")) {
-                    sender.sendMessage(ChatColor.RED + "You do not have permission to use this command!");
+                    sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                     return false;
                 }
                 World world = getServer().getWorld(args[1]);
@@ -419,11 +434,11 @@ public class MyChunk extends JavaPlugin {
                     return false;
                 }
                 String worldName = world.getName();
-                Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+                Object[] allChunks = chunkStore.getKeys(true).toArray();
                 for (int i = 1; i < allChunks.length; i++) {
                     String[] chunkSplit = String.valueOf(allChunks[i]).split("_");
                     if (worldName.equalsIgnoreCase(chunkSplit[0])) {
-                        plugin.chunkStore.set(String.valueOf(allChunks[i]), null);
+                        chunkStore.set(String.valueOf(allChunks[i]), null);
                     }
                 }
                 saveChunkStore();
@@ -434,19 +449,18 @@ public class MyChunk extends JavaPlugin {
     }
     
     private void renewAllOwnerships() {
-        Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
+        Object[] allChunks = chunkStore.getKeys(true).toArray();
         for (int i = 1; i < allChunks.length; i++) {
-            plugin.chunkStore.set(allChunks[i] + ".lastActive", new Date().getTime() / 1000);
+            chunkStore.set(allChunks[i] + ".lastActive", new Date().getTime() / 1000);
         }
-        plugin.saveChunkStore();
+        saveChunkStore();
+        loadAllChunks();
     }
     
     public int ownedChunkCount(String playerName) {
         int owned = 0;
-        Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
-        for (int i = 1; i < allChunks.length; i++) {
-            String thisOwner = plugin.chunkStore.getString(allChunks[i] + ".owner");
-            if (playerName.equalsIgnoreCase(thisOwner)) {
+        for (MyChunkChunk chunk : chunks.values()) {
+            if (chunk.getOwner().equalsIgnoreCase(playerName)) {
                 owned++;
             }
         }
@@ -471,13 +485,24 @@ public class MyChunk extends JavaPlugin {
         return max;
     }
     
+    protected void loadAllChunks() {
+        chunks.clear();
+        Object[] chunkSource = chunkStore.getKeys(false).toArray();
+        for (Object chunk : chunkSource) {
+            String[] elements = ((String)chunk).split("_");
+            int x = Integer.parseInt(elements[1]);
+            int y = Integer.parseInt(elements[2]);
+            chunks.put(chunk.toString(), new MyChunkChunk(elements[0], x, y, this));
+        }
+    }
+    
     protected void loadChunkStore() {
         if (chunkFile == null) {
             chunkFile = new File(getDataFolder(),"chunks.yml");
         }
         chunkStore = YamlConfiguration.loadConfiguration(chunkFile);
     }
-	
+    
     protected FileConfiguration getChunkStore() {
         if (chunkStore == null) {
             loadChunkStore();
@@ -494,5 +519,156 @@ public class MyChunk extends JavaPlugin {
         } catch (IOException ex) {
             getLogger().log(Level.SEVERE, "Could not save " + chunkFile, ex );
         }
-    }    
+    }
+    
+    private void reloadLang() {
+        lang.clear();
+        langStore = getLang();
+        
+        // General
+        loadLangPhrase("Yes", "Yes");
+        loadLangPhrase("No", "No");
+        loadLangPhrase("Unowned", "Unowned");
+        loadLangPhrase("Server", "Server");
+        loadLangPhrase("Price", "Price");
+        loadLangPhrase("Player", "Player");
+        loadLangPhrase("Everyone", "EVERYONE");
+        loadLangPhrase("None", "None");
+        loadLangPhrase("By", "by");
+        loadLangPhrase("Disabled", "Disabled");
+        loadLangPhrase("All", "ALL");
+        loadLangPhrase("Build", "Build");
+        loadLangPhrase("Destroy", "Destroy");
+        loadLangPhrase("AccessChests", "Access Chests");
+        loadLangPhrase("IgniteBlocks", "Ignite Blocks");
+        loadLangPhrase("DropLava", "Drop Lava");
+        loadLangPhrase("DropWater", "Drop Water");
+        loadLangPhrase("OpenWoodenDoors", "Open Wooden Doors");
+        loadLangPhrase("UseButtonsLevers", "Use Buttons/Levers etc");
+        
+        // Info
+        loadLangPhrase("ChunkForSale", "Chunk For Sale");
+        loadLangPhrase("AmountDeducted", "was deducted from your account");
+        loadLangPhrase("BoughtFor", "bought one of your chunks for");
+        loadLangPhrase("ChunkClaimed", "Chunk claimed!");
+        loadLangPhrase("ChunkClaimedFor", "Chunk claimed for");
+        loadLangPhrase("ChunkUnclaimed", "Chunk unclaimed!");
+        loadLangPhrase("ChunkUnclaimedFor", "Chunk unclaimed for");
+        loadLangPhrase("YouOwn", "You own this chunk!");
+        loadLangPhrase("OwnedBy", "This Chunk is owned by");
+        loadLangPhrase("AllowedPlayers", "Allowed Players");
+        loadLangPhrase("PermissionsUpdated", "Permissions updated!");
+        loadLangPhrase("ChunkIs", "This chunk is");
+        loadLangPhrase("StartClaimArea1", "Claim Area Started!");
+        loadLangPhrase("ClaimAreaCancelled", "Area claim cancelled!");
+        loadLangPhrase("StartClaimArea2", "Place a second [ClaimArea] sign to claim all chunks in the area.");
+        loadLangPhrase("YouWereCharged", "You were charged");
+        loadLangPhrase("ChunksClaimed", "Chunks Claimed");
+        loadLangPhrase("ChunksOwned", "Owned Chunks");
+        loadLangPhrase("TotalClaimedChunks", "Total Claimed Chunks");
+        loadLangPhrase("Yours", "Yours");
+        loadLangPhrase("Unlimited", "Unlimited");
+        loadLangPhrase("DefaultMax", "Default Max Chunks Per Player");
+        loadLangPhrase("Chunk", "Max Chunks");
+        loadLangPhrase("AllowNeighbours", "Allow Neighbours");
+        loadLangPhrase("ChunkPrice", "Chunk Price");
+        loadLangPhrase("AllowOverbuy", "Allow Overbuy");
+        loadLangPhrase("OverbuyFee", "Overbuy Fee");
+        loadLangPhrase("ProtectUnclaimed", "Protect Unclaimed");
+        loadLangPhrase("Resales", "resales");
+        loadLangPhrase("UnclaimRefunds", "Unclaim Refunds");
+        loadLangPhrase("DaysWithoutLogin", "day(s) with no login");
+        loadLangPhrase("ClaimExpiry", "Claim Expiry");
+        loadLangPhrase("PermissionFlags", "Permission Flags");
+        loadLangPhrase("Reloaded", "Mychunk files have been reloaded!");
+        
+        //Errors
+        loadLangPhrase("AlreadyOwner", "You already own this chunk!");
+        loadLangPhrase("AlreadyOwned", "This Chunk is already owned by");
+        loadLangPhrase("AlreadyOwn", "You already own");
+        loadLangPhrase("ChunkNotOwned", "This chunk is not owned!");
+        loadLangPhrase("Chunks", "chunks");
+        loadLangPhrase("NoNeighbours", "You cannot claim a chunk next to someone else's chunk!");
+        loadLangPhrase("CantAfford", "You cannot afford to claim that chunk!");
+        loadLangPhrase("DoNotOwn", "You do not own this chunk!");
+        loadLangPhrase("Line2Player", "Line 2 must contain a player name (or * for all)!");
+        loadLangPhrase("AllowSelf", "You dont need to allow yourself!");
+        loadLangPhrase("CannotDestroyClaim", "You cannot destroy another player's Claim sign!");
+        loadLangPhrase("ClaimAreaWorldError", "[ClaimArea] signs must both be in the same world!");
+        loadLangPhrase("AreaTooBig", "You cannot claim more than 64 chunks in one area!");
+        loadLangPhrase("FoundClaimedInArea", "At least one chunk in the specified area is already claimed!");
+        loadLangPhrase("ClaimAreaTooLarge", "cannot claim that many chunks!");
+        loadLangPhrase("ChunksInArea", "Chunks In Area");
+        loadLangPhrase("CantAffordClaimArea", "You cannot afford to buy that many chunks!");
+        loadLangPhrase("SpecifyNewMaxChunks", "You must specify a new maximum chunk limit!");
+        loadLangPhrase("NewLimit", "new limit");
+        loadLangPhrase("SpecifyNewChunkPrice", "You must specify a new chunk price!");
+        loadLangPhrase("NewPrice", "new price");
+        loadLangPhrase("SpecifyNewOverbuyPrice", "You must specify a new overbuy price!");
+        loadLangPhrase("SpecifyToggle", "You must specify what to toggle!");
+        loadLangPhrase("SpecifyPurgePlayer", "You must specify which player to purge!");
+        loadLangPhrase("PlayerName", "Player Name");
+        loadLangPhrase("SpecifyPurgeWorld", "You must specify which world to purge!");
+        loadLangPhrase("WorldName", "World Name");
+        loadLangPhrase("NoEcoPlugin", "There is no economy plugin running! Command aborted.");
+        loadLangPhrase("NotFound", "not found");
+        
+        // Permissions
+        loadLangPhrase("NoPermsCommand", "You do not have permission to use this command!");
+        loadLangPhrase("NoPermsBuild", "You do not have permission to build here!");
+        loadLangPhrase("NoPermsBreak", "You do not have permission to break blocks here!");
+        loadLangPhrase("NoPermsFire", "FIRE! Oh phew... you're not allowed!");
+        loadLangPhrase("NoPermsLava", "Are you crazy!? You can't drop lava there!");
+        loadLangPhrase("NoPermsWater", "Are you crazy!? You can't drop water there!");
+        loadLangPhrase("NoPermsDoor", ">KNOCK< >KNOCK< This door is locked!");
+        loadLangPhrase("NoPermsDoorOwner", ">KNOCK< >KNOCK< Someone is visiting your chunk!");
+        loadLangPhrase("NoPermsButton", ">BUZZZ< The button tripped a silent alarm!");
+        loadLangPhrase("NoPermsButtonOwner", ">BUZZ< Someone pressed a button in your chunk!");
+        loadLangPhrase("NoPermsLever", ">CLICK< The lever tripped a silent alarm!");
+        loadLangPhrase("NoPermsLeverOwner", ">CLICK< Someone touched a lever in your chunk!");
+        loadLangPhrase("NoPermsChest", ">CLUNK< That chest isn't yours!");
+        loadLangPhrase("NoPermsChestOwner", ">CLUNK< Someone tryed to open a chest on your chunk!");
+        loadLangPhrase("NoPermsSpecial", ">BUZZZ< Hands off! That's a special block!");
+        loadLangPhrase("NoPermsSpecialOwner", ">BUZZZ< Someone touched a special block in your chunk!");
+        loadLangPhrase("NoPermsPVP", "That player is protected by a magic shield!");
+        loadLangPhrase("NoPermsClaim", "You do not have permission to claim chunks!");
+        loadLangPhrase("NoPermsClaimArea", "You do not have permission to use [ClaimArea] signs!");
+        loadLangPhrase("NoPermsBuyOwned", "You do not have permission to buy owned chunks!");
+        loadLangPhrase("NoPermsClaimServer", "You do not have permission to claim chunks for the server!");
+        loadLangPhrase("NoPermsClaimOther", "You do not have permission to claim chunks for other players!");
+        loadLangPhrase("NoPermsUnclaimServer", "You do not have permission to unclaim chunks for the server!");
+        loadLangPhrase("NoPermsUnclaimOther", "You do not have permission to unclaim chunks for other players!");
+        
+    }
+    
+    private void loadLangPhrase(String key, String defaultString) {
+        String value = langStore.getString(key, defaultString);
+        langStore.set(key, value);
+        lang.put(key, value);
+    }
+    
+    protected void loadLang() {
+        if (langFile == null) {
+            langFile = new File(getDataFolder(),"lang.yml");
+        }
+        langStore = YamlConfiguration.loadConfiguration(langFile);
+    }
+    
+    protected FileConfiguration getLang() {
+        if (langStore == null) {
+            loadLang();
+        }
+        return langStore;
+    }
+	
+    protected void saveLang() {
+        if (langStore == null || langFile == null) {
+            return;
+        }
+        try {
+            langStore.save(langFile);
+        } catch (IOException ex) {
+            getLogger().log(Level.SEVERE, "Could not save " + langFile, ex );
+        }
+    }
 }

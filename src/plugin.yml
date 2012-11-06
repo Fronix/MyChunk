@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 1.2.2
+version: 1.3.0 BETA
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -48,6 +48,7 @@ permissions:
       mychunk.commands.expirydays: true
       mychunk.commands.toggle.*: true
       mychunk.commands.purge.*: true
+      mychunk.commands.reload: true
   mychunk.commands.price:
     description: Access to command /mychunk price
     default: op
@@ -104,6 +105,8 @@ permissions:
     description: Access to /mychunk purgep
   mychunk.commands.purgew:
     description: Access to /mychunk purgew
+  mychunk.commands.reload:
+    description: Access to /mychunk reload
 
 # Claim Permissions
   mychunk.claim.*:
@@ -116,6 +119,7 @@ permissions:
        mychunk.claim.unlimited: true
        mychunk.claim.others.unlimited: true
        mychunk.claim.overbuy: true
+       mychunk.claim.area: true
   mychunk.claim:
     description: Can claim chunks
     default: op
@@ -133,6 +137,9 @@ permissions:
     default: op
   mychunk.claim.overbuy:
     description: Can buy more than the max limit for the overbuy price
+    default: op
+  mychunk.claim.area:
+    description: Can buy chunks usign [ClaimArea] signs
     default: op
 
 # Resale Permissions
