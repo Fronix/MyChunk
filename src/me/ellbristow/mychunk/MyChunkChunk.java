@@ -317,11 +317,11 @@ public class MyChunkChunk {
     }
     
     public boolean hasNeighbours() {
-        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(5, 64, 5), plugin);
-        if (!chunkX1.isClaimed() || !chunkX2.isClaimed() || !chunkZ1.isClaimed() || !chunkZ2.isClaimed()) {
+        MyChunkChunk chunkX1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunkX + 1)+"_"+chunkZ);
+        MyChunkChunk chunkX2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunkX - 1)+"_"+chunkZ);
+        MyChunkChunk chunkZ1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunkX+"_"+(chunkZ+1));
+        MyChunkChunk chunkZ2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunkX+"_"+(chunkZ-1));
+        if (chunkX1 != null || chunkX2 != null || chunkZ1 != null || chunkZ2 != null) {
             return true;
         }
         return false;

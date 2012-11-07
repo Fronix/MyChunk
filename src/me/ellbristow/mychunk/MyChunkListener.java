@@ -2,6 +2,7 @@ package me.ellbristow.mychunk;
 
 import java.util.*;
 import org.bukkit.*;
+import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -395,6 +396,12 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
+            } else if (!plugin.allowNether && plugin.getServer().getWorld(chunk.getWorldName()).getEnvironment().equals(Environment.NETHER)) {
+                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsNether"));
+                allowed = false;
+            } else if (!plugin.allowEnd && plugin.getServer().getWorld(chunk.getWorldName()).getEnvironment().equals(Environment.THE_END)) {
+                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsEnd"));
+                allowed = false;
             }
             int playerMax = plugin.getMaxChunks(player);
             if (plugin.foundEconomy && getClaimPrice(chunk) != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunkCount(player.getName()) < playerMax) && plugin.vault.economy.getBalance(player.getName()) < getClaimPrice(chunk)) {
@@ -489,13 +496,18 @@ public class MyChunkListener implements Listener {
             if (!player.hasPermission("mychunk.claim")) {
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaim"));
                 allowed = false;
-            }
-            if (!player.hasPermission("mychunk.claim.area")) {
+            } else if (!player.hasPermission("mychunk.claim.area")) {
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaimArea"));
+                allowed = false;
+            } else if (!plugin.allowNether && block.getWorld().getEnvironment().equals(Environment.NETHER)) {
+                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsNether"));
+                allowed = false;
+            } else if (!plugin.allowEnd && block.getWorld().getEnvironment().equals(Environment.THE_END)) {
+                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsEnd"));
                 allowed = false;
             }
             if (allowed) {
-                String correctName = "";
+                String correctName;
                 if (line1.isEmpty() || line1.equalsIgnoreCase(player.getName())) {
                     correctName = player.getName();
                 } else {
@@ -569,6 +581,7 @@ public class MyChunkListener implements Listener {
                         endZ = startChunk.getZ();
                     }
                     boolean foundClaimed = false;
+                    boolean foundNeighbour = false;
                     List<Chunk> foundChunks = new ArrayList<Chunk>();
                     int chunkCount = 0;
                     for (int x = startX; x <= endX; x++) {
@@ -579,7 +592,11 @@ public class MyChunkListener implements Listener {
                                 if (myChunk != null) {
                                     if (!myChunk.getOwner().equalsIgnoreCase(correctName)) {
                                         foundClaimed = true;
+                                    } else if (myChunk.hasNeighbours()) {
+                                        foundNeighbour = true;
                                     }
+                                } else if (hasNeighbours(thisChunk)) {
+                                    foundNeighbour = true;
                                 } else {
                                     foundChunks.add(thisChunk);
                                     chunkCount++;
@@ -594,6 +611,12 @@ public class MyChunkListener implements Listener {
                     }
                     if (foundClaimed) {
                         player.sendMessage(ChatColor.RED + plugin.lang.get("FoundClaimedInArea"));
+                        event.setCancelled(true);
+                        breakSign(block);
+                        return;
+                    }
+                    if (foundNeighbour && !plugin.allowNeighbours) {
+                        player.sendMessage(ChatColor.RED + plugin.lang.get("FoundNeighboursInArea"));
                         event.setCancelled(true);
                         breakSign(block);
                         return;
@@ -1109,9 +1132,20 @@ public class MyChunkListener implements Listener {
         else return chunk.isForSale();
     }
     
+    private boolean hasNeighbours(Chunk chunk) {
+        MyChunkChunk chunkX1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() + 1)+"_"+chunk.getZ());
+        MyChunkChunk chunkX2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() - 1)+"_"+chunk.getZ());
+        MyChunkChunk chunkZ1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()+1));
+        MyChunkChunk chunkZ2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()-1));
+        if (chunkX1 != null || chunkX2 != null || chunkZ1 != null || chunkZ2 != null) {
+            return true;
+        }
+        return false;
+    }
+    
     private boolean hasNeighbours(MyChunkChunk chunk) {
-        if (chunk == null) return false;
-        else return chunk.hasNeighbours();
+        if (chunk != null) return chunk.hasNeighbours();
+        return false;
     }
     
     private double getClaimPrice(MyChunkChunk chunk) {

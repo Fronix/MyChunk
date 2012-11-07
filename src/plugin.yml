@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 1.3.0 BETA
+version: 1.3.0 B2
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -77,6 +77,8 @@ permissions:
       mychunk.commands.toggle.neighbours: true
       mychunk.commands.toggle.unclaimed: true
       mychunk.commands.toggle.expiry: true
+      mychunk.commands.toggle.allownether: true
+      mychunk.commands.toggle.allowend: true
   mychunk.commands.toggle.refund:
     description: Access to command /mychunk toggle refund
     default: op
@@ -94,6 +96,12 @@ permissions:
     default: op
   mychunk.commands.toggle.expiry:
     description: Access to command /mychunk toggle expiry
+    default: op
+  mychunk.commands.toggle.allownether:
+    description: Access to command /mychunk toggle allownether
+    default: op
+  mychunk.commands.toggle.allowend:
+    description: Access to command /mychunk toggle allowend
     default: op
   mychunk.commands.purge.*:
     description: Access to all /muchunk purgep and /mychunk purgew

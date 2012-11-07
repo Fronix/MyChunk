@@ -2,8 +2,10 @@ package me.ellbristow.mychunk;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -31,6 +33,8 @@ public class MyChunk extends JavaPlugin {
     protected boolean allowOverbuy = false;
     protected boolean protectUnclaimed = false;
     protected boolean useClaimExpiry = false;
+    protected boolean allowNether = true;
+    protected boolean allowEnd = true;
     protected int claimExpiryDays;
     protected boolean overbuyP2P = true;
     protected double chunkPrice = 0.00;
@@ -63,6 +67,10 @@ public class MyChunk extends JavaPlugin {
         config.set("useClaimExpiry", useClaimExpiry);
         claimExpiryDays = config.getInt("claimExpiresAfter", 7);
         config.set("claimExpiresAfter", claimExpiryDays);
+        allowNether = config.getBoolean("allowNether", true);
+        config.set("allowNether", allowNether);
+        allowEnd = config.getBoolean("allowEnd", true);
+        config.set("allowEnd", allowEnd);
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
             foundVault = true;
             vault = new MyChunkVaultLink(this);
@@ -103,21 +111,30 @@ public class MyChunk extends JavaPlugin {
                 PluginDescriptionFile pdfFile = getDescription();
                 sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " "+lang.get("By")+" " + ChatColor.WHITE + "ellbristow");
                 if (sender instanceof Player) {
-                    sender.sendMessage(ChatColor.GOLD + lang.get("ChunksOwned")+": " + ChatColor.WHITE + ownedChunkCount(sender.getName()));
+                    sender.sendMessage(ChatColor.GOLD + lang.get("ChunksOwned")+": " + ChatColor.WHITE + ownedChunkCount(sender.getName()) +"  "+ ChatColor.GOLD + lang.get("TotalClaimedChunks")+": " + ChatColor.WHITE + chunks.size());
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + lang.get("TotalClaimedChunks")+": " + ChatColor.WHITE + chunks.size());
                 }
-                sender.sendMessage(ChatColor.GOLD + lang.get("TotalClaimedChunks")+": " + ChatColor.WHITE + chunks.size());
-                int playerMax = getMaxChunks(sender);
                 String yourMax;
+                int playerMax = getMaxChunks(sender);
                 if (playerMax != 0) {
                     yourMax = ChatColor.GRAY + " ("+lang.get("Yours")+": " + playerMax + ")";
                 } else {
                     yourMax = ChatColor.GRAY + " ("+lang.get("Yours")+": "+lang.get("Unlimited")+")";
                 }
                 sender.sendMessage(ChatColor.GOLD + lang.get("DefaultMax")+": " + ChatColor.WHITE + maxChunks + yourMax);
-                sender.sendMessage(ChatColor.GOLD + lang.get("AllowNeighbours")+": " + ChatColor.WHITE + allowNeighbours + ChatColor.GOLD + " "+lang.get("ProtectUnclaimed")+": " + ChatColor.WHITE + protectUnclaimed);
-                if (foundEconomy) {
+                if (foundEconomy){
                     sender.sendMessage(ChatColor.GOLD + lang.get("ChunkPrice")+": " + ChatColor.WHITE + vault.economy.format(chunkPrice));
-                    sender.sendMessage(ChatColor.GOLD + lang.get("AllowOverbuy")+": " + ChatColor.WHITE + allowOverbuy);
+                    String paid = lang.get("No");
+                    if (unclaimRefund) {
+                        paid = lang.get("Yes");
+                    }
+                    sender.sendMessage(ChatColor.GOLD + lang.get("UnclaimRefunds")+": " + ChatColor.WHITE + paid);
+                }
+                sender.sendMessage("");
+                sender.sendMessage(ChatColor.GOLD + lang.get("AllowNeighbours")+": " + ChatColor.WHITE + lang.get(""+allowNeighbours) + ChatColor.GOLD + "  "+lang.get("ProtectUnclaimed")+": " + ChatColor.WHITE + lang.get(""+protectUnclaimed));
+                if (foundEconomy) {
+                    sender.sendMessage(ChatColor.GOLD + lang.get("AllowOverbuy")+": " + ChatColor.WHITE + lang.get(""+allowOverbuy));
                     if (allowOverbuy) {
                         String resales = "exc.";
                         if (overbuyP2P) {
@@ -125,11 +142,6 @@ public class MyChunk extends JavaPlugin {
                         }
                         sender.sendMessage(ChatColor.GOLD + lang.get("OverbuyFee")+": " + ChatColor.WHITE + vault.economy.format(overbuyPrice) + "(" + resales +" "+lang.get("Resales")+")");
                     }
-                    String paid = lang.get("No");
-                    if (unclaimRefund) {
-                        paid = lang.get("Yes");
-                    }
-                    sender.sendMessage(ChatColor.GOLD + lang.get("UnclaimRefunds")+": " + ChatColor.WHITE + paid);
                 }
                 String claimExpiry;
                 if (!useClaimExpiry) {
@@ -138,7 +150,7 @@ public class MyChunk extends JavaPlugin {
                     claimExpiry = claimExpiryDays + " "+lang.get("DaysWithoutLogin");
                 }
                 sender.sendMessage(ChatColor.GOLD + lang.get("ClaimExpiry")+": " + ChatColor.WHITE + claimExpiry);
-                
+                sender.sendMessage(ChatColor.GOLD + lang.get("AllowNether")+": " + ChatColor.WHITE + lang.get(""+allowNether) + "  " + ChatColor.GOLD + lang.get("AllowEnd")+": " + ChatColor.WHITE + lang.get(""+allowEnd));
                 return true;
             } else {
                 sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
@@ -169,7 +181,7 @@ public class MyChunk extends JavaPlugin {
                 return false;
             } else if (args[0].equalsIgnoreCase("toggle")) {
                 sender.sendMessage(ChatColor.RED + lang.get("SpecifyToggle"));
-                sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund|overbuy|neighbours|resales|unclaimed|expiry}");
+                sender.sendMessage(ChatColor.RED + "/mychunk toggle {refund | overbuy | neighbours | resales | unclaimed | expiry | allownether | allowend}");
                 return false;
             } else if (args[0].equalsIgnoreCase("purgep")) {
                 sender.sendMessage(ChatColor.RED + lang.get("SpecifyPurgePlayer"));
@@ -355,6 +367,36 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
                         return false;
                     }
+                } else if (args[1].equalsIgnoreCase("allownether")) {
+                    if (!sender.hasPermission("mychunk.commands.toggle.allownether")) {
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
+                        return false;
+                    }
+                    if (allowNether) {
+                        allowNether = false;
+                        sender.sendMessage(ChatColor.GOLD + lang.get("ToggleNetherCannot"));
+                    } else {
+                        allowNether = true;
+                        sender.sendMessage(ChatColor.GOLD + lang.get("ToggleNetherCan"));
+                    }
+                    config.set("allowNether", allowNether);
+                    saveConfig();
+                    return true;
+                } else if (args[1].equalsIgnoreCase("allowend")) {
+                    if (!sender.hasPermission("mychunk.commands.toggle.allowend")) {
+                        sender.sendMessage(ChatColor.RED + lang.get("NoPermsCommand"));
+                        return false;
+                    }
+                    if (allowNether) {
+                        allowNether = false;
+                        sender.sendMessage(ChatColor.GOLD + lang.get("ToggleEndCannot"));
+                    } else {
+                        allowNether = true;
+                        sender.sendMessage(ChatColor.GOLD + lang.get("ToggleEndCan"));
+                    }
+                    config.set("allowNether", allowNether);
+                    saveConfig();
+                    return true;
                 }
             } else if (args[0].equalsIgnoreCase("max")) {
                 if (sender.hasPermission("mychunk.commands.max")) {
@@ -414,14 +456,17 @@ public class MyChunk extends JavaPlugin {
                     sender.sendMessage(ChatColor.RED + "Player "+ChatColor.WHITE+args[1]+ChatColor.RED+" not found!");
                     return false;
                 }
-                Object[] allChunks = chunkStore.getKeys(true).toArray();
-                for (int i = 1; i < allChunks.length; i++) {
-                    String thisOwner = chunkStore.getString(allChunks[i] + ".owner");
-                    if (args[1].equalsIgnoreCase(thisOwner)) {
-                        chunkStore.set(String.valueOf(allChunks[i]), null);
+                List<String> toRemove = new ArrayList<String>();
+                for (String key : chunks.keySet()) {
+                    MyChunkChunk chunk = chunks.get(key);
+                    if (chunks.get(key).getOwner().equalsIgnoreCase(player.getName())) {
+                        chunk.unclaim();
+                        toRemove.add(key);
                     }
                 }
-                saveChunkStore();
+                for (String key:toRemove) {
+                    chunks.remove(key);
+                }
                 sender.sendMessage(ChatColor.GOLD + "All chunks for " + ChatColor.WHITE + player.getName() + ChatColor.GOLD + " are now Unowned!");
             }  else if (args[0].equalsIgnoreCase("purgew")) {
                 if (!sender.hasPermission("mychunk.commands.purgew")) {
@@ -434,14 +479,17 @@ public class MyChunk extends JavaPlugin {
                     return false;
                 }
                 String worldName = world.getName();
-                Object[] allChunks = chunkStore.getKeys(true).toArray();
-                for (int i = 1; i < allChunks.length; i++) {
-                    String[] chunkSplit = String.valueOf(allChunks[i]).split("_");
-                    if (worldName.equalsIgnoreCase(chunkSplit[0])) {
-                        chunkStore.set(String.valueOf(allChunks[i]), null);
+                List<String> toRemove = new ArrayList<String>();
+                for (String key : chunks.keySet()) {
+                    MyChunkChunk chunk = chunks.get(key);
+                    if (chunks.get(key).getWorldName().equalsIgnoreCase(worldName)) {
+                        chunk.unclaim();
+                        toRemove.add(key);
                     }
                 }
-                saveChunkStore();
+                for (String key:toRemove) {
+                    chunks.remove(key);
+                }
                 sender.sendMessage(ChatColor.GOLD + "All chunks in " + ChatColor.WHITE + worldName + ChatColor.GOLD + " are now Unowned!");
             }
         }
@@ -490,9 +538,16 @@ public class MyChunk extends JavaPlugin {
         Object[] chunkSource = chunkStore.getKeys(false).toArray();
         for (Object chunk : chunkSource) {
             String[] elements = ((String)chunk).split("_");
-            int x = Integer.parseInt(elements[1]);
-            int y = Integer.parseInt(elements[2]);
-            chunks.put(chunk.toString(), new MyChunkChunk(elements[0], x, y, this));
+            String worldName = "";
+            for (int i = 0; i < elements.length-3; i++) {
+                if (!worldName.isEmpty()) {
+                    worldName += "_";
+                }
+                worldName += elements[i];
+            }
+            int x = Integer.parseInt(elements[elements.length-2]);
+            int z = Integer.parseInt(elements[elements.length-1]);
+            chunks.put(chunk.toString(), new MyChunkChunk(elements[0], x, z, this));
         }
     }
     
@@ -528,6 +583,8 @@ public class MyChunk extends JavaPlugin {
         // General
         loadLangPhrase("Yes", "Yes");
         loadLangPhrase("No", "No");
+        loadLangPhrase("true", "True");
+        loadLangPhrase("false", "False");
         loadLangPhrase("Unowned", "Unowned");
         loadLangPhrase("Server", "Server");
         loadLangPhrase("Price", "Price");
@@ -579,8 +636,15 @@ public class MyChunk extends JavaPlugin {
         loadLangPhrase("UnclaimRefunds", "Unclaim Refunds");
         loadLangPhrase("DaysWithoutLogin", "day(s) with no login");
         loadLangPhrase("ClaimExpiry", "Claim Expiry");
+        loadLangPhrase("AllowNether", "Allow Nether");
+        loadLangPhrase("AllowEnd", "Allow End");
         loadLangPhrase("PermissionFlags", "Permission Flags");
         loadLangPhrase("Reloaded", "Mychunk files have been reloaded!");
+        loadLangPhrase("ToggleNetherCannot", "Users now CANNOT claim chunks in Nether worlds");
+        loadLangPhrase("ToggleNetherCan", "Users now CAN claim chunks in Nether worlds");
+        loadLangPhrase("ToggleEndCannot", "Users now CANNOT claim chunks in End worlds");
+        loadLangPhrase("ToggleEndCan", "Users now CAN claim chunks in End worlds");
+        
         
         //Errors
         loadLangPhrase("AlreadyOwner", "You already own this chunk!");
@@ -597,6 +661,7 @@ public class MyChunk extends JavaPlugin {
         loadLangPhrase("ClaimAreaWorldError", "[ClaimArea] signs must both be in the same world!");
         loadLangPhrase("AreaTooBig", "You cannot claim more than 64 chunks in one area!");
         loadLangPhrase("FoundClaimedInArea", "At least one chunk in the specified area is already claimed!");
+        loadLangPhrase("FoundNeighboursInArea", "At least one chunk in the specified area has a neighbour!");
         loadLangPhrase("ClaimAreaTooLarge", "cannot claim that many chunks!");
         loadLangPhrase("ChunksInArea", "Chunks In Area");
         loadLangPhrase("CantAffordClaimArea", "You cannot afford to buy that many chunks!");
@@ -638,6 +703,8 @@ public class MyChunk extends JavaPlugin {
         loadLangPhrase("NoPermsClaimOther", "You do not have permission to claim chunks for other players!");
         loadLangPhrase("NoPermsUnclaimServer", "You do not have permission to unclaim chunks for the server!");
         loadLangPhrase("NoPermsUnclaimOther", "You do not have permission to unclaim chunks for other players!");
+        loadLangPhrase("NoPermsNether", "You do not have permission to claim chunks in Nether worlds!");
+        loadLangPhrase("NoPermsEnd", "You do not have permission to claim chunks in End worlds!");
         
     }
     
