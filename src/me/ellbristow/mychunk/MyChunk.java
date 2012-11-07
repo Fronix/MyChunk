@@ -537,17 +537,12 @@ public class MyChunk extends JavaPlugin {
         chunks.clear();
         Object[] chunkSource = chunkStore.getKeys(false).toArray();
         for (Object chunk : chunkSource) {
-            String[] elements = ((String)chunk).split("_");
-            String worldName = "";
-            for (int i = 0; i < elements.length-3; i++) {
-                if (!worldName.isEmpty()) {
-                    worldName += "_";
-                }
-                worldName += elements[i];
-            }
-            int x = Integer.parseInt(elements[elements.length-2]);
-            int z = Integer.parseInt(elements[elements.length-1]);
-            chunks.put(chunk.toString(), new MyChunkChunk(elements[0], x, z, this));
+            int split = ((String)chunk).lastIndexOf("_", ((String)chunk).lastIndexOf("_") - 1);
+            String world = ((String)chunk).substring(0, split);
+            String[] elements = ((String)chunk).substring(split + 1).split("_");
+            int x = Integer.parseInt(elements[0]);
+            int z = Integer.parseInt(elements[1]);
+            chunks.put(chunk.toString(), new MyChunkChunk(world, x, z, this));
         }
     }
     
