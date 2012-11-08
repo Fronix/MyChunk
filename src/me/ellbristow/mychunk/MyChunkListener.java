@@ -5,7 +5,6 @@ import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Sign;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -97,11 +96,6 @@ public class MyChunkListener implements Listener {
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
                 event.setCancelled(true);
             }
-        } else if (event.getBlock().getState() instanceof Sign) {
-            Sign sign = (Sign)event.getBlock().getState();
-            if (sign.getLine(0).equalsIgnoreCase("[ClaimArea]") && !sign.getLine(1).equalsIgnoreCase(event.getPlayer().getName())) {
-                event.getPlayer().sendMessage(ChatColor.RED + plugin.lang.get("CannotDestroyClaim"));
-            }
         }
     }
     
@@ -157,6 +151,7 @@ public class MyChunkListener implements Listener {
         }
         MyChunkChunk chunk = getChunk(targetBlock);
         if (chunk != null || plugin.protectUnclaimed) {
+            // Claimed
             Player player = event.getPlayer();
             int bucket = event.getBucket().getId();
             if (chunk != null) {
@@ -173,11 +168,12 @@ public class MyChunkListener implements Listener {
                     }
                 }
             } else {
-                if (bucket == 327 && !chunk.isAllowed(player.getName(), "L")) {
+                // ProtectUnclaimed
+                if (bucket == 327) {
                     player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsLava"));
                     event.setCancelled(true);
                     player.setItemInHand(new ItemStack(327,1));
-                } else if (bucket == 326 && !chunk.isAllowed(player.getName(), "W")) {
+                } else if (bucket == 326) {
                     player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsWater"));
                     event.setCancelled(true);
                     player.setItemInHand(new ItemStack(326,1));
@@ -383,8 +379,8 @@ public class MyChunkListener implements Listener {
                     player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBuyOwned"));
                     allowed = false;
                 }
-            } else if (plugin.allowNeighbours == false && hasNeighbours(chunk)&& !isForSale(chunk)) {
-                String[] neighbours = chunk.getNeighbours();
+            } else if (!plugin.allowNeighbours && hasNeighbours(block.getChunk()) && !isForSale(chunk)) {
+                String[] neighbours = getNeighbours(block.getChunk());
                 for (int i = 0; i<neighbours.length; i++) {
                     if (!neighbours[i].equalsIgnoreCase("") && !neighbours[i].equalsIgnoreCase("server") && !neighbours[i].equalsIgnoreCase("unowned")) {
                         if (!neighbours[i].equalsIgnoreCase(player.getName()) && line1.equalsIgnoreCase("")) {
@@ -584,6 +580,7 @@ public class MyChunkListener implements Listener {
                     boolean foundNeighbour = false;
                     List<Chunk> foundChunks = new ArrayList<Chunk>();
                     int chunkCount = 0;
+                    xloop:
                     for (int x = startX; x <= endX; x++) {
                         for (int z = startZ; z <= endZ; z++) {
                             if (chunkCount < 64) {
@@ -592,11 +589,24 @@ public class MyChunkListener implements Listener {
                                 if (myChunk != null) {
                                     if (!myChunk.getOwner().equalsIgnoreCase(correctName)) {
                                         foundClaimed = true;
+                                        break xloop;
                                     } else if (myChunk.hasNeighbours()) {
-                                        foundNeighbour = true;
+                                        String[] neighbours = myChunk.getNeighbours();
+                                        for (String neighbour : neighbours) {
+                                            if (!neighbour.equalsIgnoreCase("Server")) {
+                                                foundNeighbour = true;
+                                            }
+                                        }
+                                        if (!plugin.allowNeighbours) break xloop;
                                     }
                                 } else if (hasNeighbours(thisChunk)) {
-                                    foundNeighbour = true;
+                                    String[] neighbours = getNeighbours(thisChunk);
+                                    for (String neighbour : neighbours) {
+                                        if (!neighbour.equalsIgnoreCase("Server")) {
+                                            foundNeighbour = true;
+                                        }
+                                    }
+                                    if (!plugin.allowNeighbours) break xloop;
                                 } else {
                                     foundChunks.add(thisChunk);
                                     chunkCount++;
@@ -1000,10 +1010,14 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         Entity remover = event.getRemover();
-        if (remover instanceof Player) {
-            MyChunkChunk chunk = getChunk(event.getEntity().getLocation().getBlock());
-            if (!((Player)remover).hasPermission("mychunk.override") && (chunk != null && !((Player)remover).getName().equals(chunk.getOwner()) && !chunk.isAllowed(((Player)remover).getName(), "B")) || plugin.protectUnclaimed) {
-                ((Player)remover).sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
+        MyChunkChunk chunk = getChunk(event.getEntity().getLocation().getBlock());
+        if (chunk != null || plugin.protectUnclaimed) {
+            if (remover instanceof Player) {
+                if (!((Player)remover).hasPermission("mychunk.override") && (chunk != null && !((Player)remover).getName().equals(chunk.getOwner()) && !chunk.isAllowed(((Player)remover).getName(), "B")) || plugin.protectUnclaimed) {
+                    ((Player)remover).sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
+                    event.setCancelled(true);
+                }
+            } else {
                 event.setCancelled(true);
             }
         }
@@ -1092,12 +1106,16 @@ public class MyChunkListener implements Listener {
     
     @EventHandler (priority = EventPriority.NORMAL)
     public void onJoin(PlayerJoinEvent event) {
-        refreshOwnership(event.getPlayer().getName());
+        if (plugin.useClaimExpiry) {
+            refreshOwnership(event.getPlayer().getName());
+        }
     }
     
     @EventHandler (priority = EventPriority.NORMAL)
     public void onQuit(PlayerQuitEvent event) {
-        refreshOwnership(event.getPlayer().getName());
+        if (plugin.useClaimExpiry) {
+            refreshOwnership(event.getPlayer().getName());
+        }
     }
     
     private void breakSign(Block block) {
@@ -1108,15 +1126,14 @@ public class MyChunkListener implements Listener {
     }
     
     private void refreshOwnership(String playerName) {
-        Object[] allChunks = plugin.chunkStore.getKeys(true).toArray();
-        for (int i = 1; i < allChunks.length; i++) {
-            String thisOwner = plugin.chunkStore.getString(allChunks[i] + ".owner");
-            if (playerName.equals(thisOwner)) {
-                plugin.chunkStore.set(allChunks[i] + ".lastActive", new Date().getTime() / 1000);
+        for (MyChunkChunk chunk : plugin.chunks.values()) {
+            if (chunk.getOwner().equalsIgnoreCase(playerName)) {
+                long now = new Date().getTime() / 1000;
+                chunk.setLastActive(now);
+                plugin.chunkStore.set(chunk.getWorldName() + "_" + chunk.getX() + "_"+ chunk.getZ() + ".lastActive", now);
             }
         }
         plugin.saveChunkStore();
-        plugin.loadAllChunks();
     }
     
     private MyChunkChunk getChunk(Block block) {
@@ -1143,9 +1160,18 @@ public class MyChunkListener implements Listener {
         return false;
     }
     
-    private boolean hasNeighbours(MyChunkChunk chunk) {
-        if (chunk != null) return chunk.hasNeighbours();
-        return false;
+    private String[] getNeighbours(Chunk chunk) {
+        Set<String> chunks = new HashSet<String>();
+        MyChunkChunk chunkX1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() + 1)+"_"+chunk.getZ());
+        if (chunkX1 != null)chunks.add(chunkX1.getOwner());
+        MyChunkChunk chunkX2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() - 1)+"_"+chunk.getZ());
+        if (chunkX2 != null)chunks.add(chunkX2.getOwner());
+        MyChunkChunk chunkZ1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()+1));
+        if (chunkZ1 != null)chunks.add(chunkZ1.getOwner());
+        MyChunkChunk chunkZ2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()-1));
+        if (chunkZ2 != null)chunks.add(chunkZ2.getOwner());
+        String[] neighbours = chunks.toArray(new String[chunks.size()]);
+        return neighbours;
     }
     
     private double getClaimPrice(MyChunkChunk chunk) {

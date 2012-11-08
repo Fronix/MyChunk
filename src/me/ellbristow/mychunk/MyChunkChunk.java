@@ -328,7 +328,7 @@ public class MyChunkChunk {
     }
     
     public boolean isClaimed() {
-        if (!owner.equals("Unowned")) {
+        if (!owner.equalsIgnoreCase("Unowned")) {
             return true;
         }
         return false;
@@ -393,6 +393,10 @@ public class MyChunkChunk {
         } else {
             claim(newOwner);
         }
+    }
+    
+    public void setLastActive(long time) {
+        lastActive = time;
     }
         
     /*
