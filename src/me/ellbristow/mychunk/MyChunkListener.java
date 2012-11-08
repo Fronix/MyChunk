@@ -20,6 +20,8 @@ import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
+//Testing my git branch thingi, hope it works.. after 2 hours =|
+
 public class MyChunkListener implements Listener {
     
     public static MyChunk plugin;
@@ -86,7 +88,7 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             if (chunk != null) {
                 String owner = chunk.getOwner();
-                if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
+                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "D") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
                         player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
                         event.setCancelled(true);
@@ -104,7 +106,7 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         MyChunkChunk chunk = getChunk(event.getBlock());
-        if (chunk!= null || plugin.protectUnclaimed) {
+        if (chunk != null || plugin.protectUnclaimed) {
             Player player = event.getPlayer();
             if (chunk != null) {
                 String owner = chunk.getOwner();
