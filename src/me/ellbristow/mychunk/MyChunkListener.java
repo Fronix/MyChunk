@@ -104,7 +104,7 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         MyChunkChunk chunk = getChunk(event.getBlock());
-        if (chunk != null || plugin.protectUnclaimed) {
+        if (chunk!= null || plugin.protectUnclaimed) {
             Player player = event.getPlayer();
             if (chunk != null) {
                 String owner = chunk.getOwner();
