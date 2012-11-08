@@ -62,7 +62,7 @@ public class MyChunk extends JavaPlugin {
         allowNeighbours = config.getBoolean("allow_neighbours", false);
         config.set("allow_neighbours", allowNeighbours);
         protectUnclaimed = config.getBoolean("protect_unclaimed", false);
-        config.set("protect_unlcaimed", protectUnclaimed);
+        config.set("protect_unclaimed", protectUnclaimed);
         useClaimExpiry = config.getBoolean("useClaimExpiry", false);
         config.set("useClaimExpiry", useClaimExpiry);
         claimExpiryDays = config.getInt("claimExpiresAfter", 7);

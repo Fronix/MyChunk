@@ -20,8 +20,6 @@ import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
-//Testing my git branch thingi, hope it works.. after 2 hours =|
-
 public class MyChunkListener implements Listener {
     
     public static MyChunk plugin;
@@ -88,7 +86,7 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             if (chunk != null) {
                 String owner = chunk.getOwner();
-                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "D") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
+                if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
                         player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
                         event.setCancelled(true);
@@ -106,7 +104,7 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         MyChunkChunk chunk = getChunk(event.getBlock());
-        if (chunk != null || plugin.protectUnclaimed) {
+        if (chunk!= null || plugin.protectUnclaimed) {
             Player player = event.getPlayer();
             if (chunk != null) {
                 String owner = chunk.getOwner();
@@ -314,7 +312,7 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         LivingEntity mob = event.getEntity();
-        if (mob instanceof Monster) {
+        if (mob instanceof Monster || mob instanceof Slime) {
             MyChunkChunk chunk = getChunk(event.getLocation().getBlock());
             if (chunk != null && !chunk.getAllowMobs()) {
                 event.setCancelled(true);
@@ -336,7 +334,7 @@ public class MyChunkListener implements Listener {
                     event.setCancelled(true);
                     Player naughty = (Player)damager;
                     naughty.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsPVP"));
-                } else if (damager instanceof Monster) {
+                } else if (damager instanceof Monster || damager instanceof Slime) {
                     if (!chunk.getAllowMobs()) {
                         event.setCancelled(true);
                     }
@@ -477,7 +475,7 @@ public class MyChunkListener implements Listener {
                             chunk.claim(correctName);
                             plugin.chunks.put(chunk.getWorldName()+"_"+chunk.getX()+"_"+chunk.getZ(), chunk);
                             player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunkClaimedFor")+" " + ChatColor.WHITE + correctName + ChatColor.GOLD + "!");
-                            if (plugin.foundEconomy && plugin.chunkPrice != 0 && !correctName.equalsIgnoreCase("server")) {
+                            if (plugin.foundEconomy && plugin.chunkPrice != 0 && !correctName.equalsIgnoreCase("server") && !player.hasPermission("mychunk.free")) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), plugin.chunkPrice);
                                 player.sendMessage(plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.GOLD + " "+plugin.lang.get("AmountDeducted"));
                             }
