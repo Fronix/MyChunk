@@ -701,6 +701,7 @@ public class MyChunk extends JavaPlugin {
         loadLangPhrase("NoPermsNether", "You do not have permission to claim chunks in Nether worlds!");
         loadLangPhrase("NoPermsEnd", "You do not have permission to claim chunks in End worlds!");
         
+        saveLang();
     }
     
     private void loadLangPhrase(String key, String defaultString) {
