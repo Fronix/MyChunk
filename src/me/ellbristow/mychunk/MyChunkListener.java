@@ -312,7 +312,7 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         LivingEntity mob = event.getEntity();
-        if (mob instanceof Monster) {
+        if (mob instanceof Monster || mob instanceof Slime) {
             MyChunkChunk chunk = getChunk(event.getLocation().getBlock());
             if (chunk != null && !chunk.getAllowMobs()) {
                 event.setCancelled(true);
@@ -334,7 +334,7 @@ public class MyChunkListener implements Listener {
                     event.setCancelled(true);
                     Player naughty = (Player)damager;
                     naughty.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsPVP"));
-                } else if (damager instanceof Monster) {
+                } else if (damager instanceof Monster || damager instanceof Slime) {
                     if (!chunk.getAllowMobs()) {
                         event.setCancelled(true);
                     }
@@ -475,7 +475,7 @@ public class MyChunkListener implements Listener {
                             chunk.claim(correctName);
                             plugin.chunks.put(chunk.getWorldName()+"_"+chunk.getX()+"_"+chunk.getZ(), chunk);
                             player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunkClaimedFor")+" " + ChatColor.WHITE + correctName + ChatColor.GOLD + "!");
-                            if (plugin.foundEconomy && plugin.chunkPrice != 0 && !correctName.equalsIgnoreCase("server")) {
+                            if (plugin.foundEconomy && plugin.chunkPrice != 0 && !correctName.equalsIgnoreCase("server") && !player.hasPermission("mychunk.free")) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), plugin.chunkPrice);
                                 player.sendMessage(plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.GOLD + " "+plugin.lang.get("AmountDeducted"));
                             }
