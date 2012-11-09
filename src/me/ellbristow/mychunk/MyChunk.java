@@ -1,12 +1,11 @@
 package me.ellbristow.mychunk;
 
 import java.io.File;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 import me.ellbristow.mychunk.SQLite.SQLiteBridge;
 import me.ellbristow.mychunk.lang.Lang;
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -416,11 +415,16 @@ public class MyChunk extends JavaPlugin {
                     return false;
                 }
                 HashMap<Integer, HashMap<String, Object>> results = chunkDb.select("world, x, z","MyChunks","owner = '"+player.getName()+"'","","");
-                for (HashMap<String, Object> result : results.values()) {
+                List<Chunk> chunks = new ArrayList<Chunk>();
+                for (int i = 0; i < results.size(); i++) {
+                    HashMap<String, Object> result = results.get(i);
                     String world = (String)result.get("world");
                     int x = Integer.parseInt(result.get("x")+"");
                     int z = Integer.parseInt(result.get("z")+"");
-                    MyChunkChunk chunk = new MyChunkChunk(world,x,z,this);
+                    chunks.add(getServer().getWorld(world).getChunkAt(x, z));
+                }
+                for (Chunk thisChunk: chunks) {
+                    MyChunkChunk chunk = new MyChunkChunk(thisChunk.getBlock(0, 0, 0),this);
                     chunk.unclaim();
                 }
                 sender.sendMessage(ChatColor.GOLD + "All chunks for " + ChatColor.WHITE + player.getName() + ChatColor.GOLD + " are now Unowned!");
@@ -448,7 +452,7 @@ public class MyChunk extends JavaPlugin {
     
     public int ownedChunkCount(String playerName) {
         HashMap<Integer, HashMap<String, Object>> results = chunkDb.select("COUNT(*) as counter", "MyChunks", "owner = '"+playerName+"'", "","");
-        return results.size();
+        return Integer.parseInt(results.get(0).get("counter")+"");
     }
     
     public int getMaxChunks(CommandSender player) {
