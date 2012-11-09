@@ -33,6 +33,7 @@ public class SQLiteBridge {
     public Connection open() {
         try {
             if (conn == null || conn.isClosed()) {
+            	Class.forName("org.sqlite.JDBC");
                 conn = DriverManager.getConnection("jdbc:sqlite:" + sqlFile.getAbsolutePath());
                 plugin.getServer().getScheduler().scheduleAsyncRepeatingTask(plugin, new Runnable() {
 
