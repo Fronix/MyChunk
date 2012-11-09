@@ -68,7 +68,7 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
-            } else {
+            } else if (!player.hasPermission("mychunk.override")) {
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBuild"));
                 if (block.getTypeId() != 63 && block.getTypeId() != 68) {
                     event.setCancelled(true);
@@ -92,7 +92,7 @@ public class MyChunkListener implements Listener {
                         event.setCancelled(true);
                     }
                 }
-            } else {
+            } else if (!player.hasPermission("mychunk.override")) {
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
                 event.setCancelled(true);
             }
@@ -108,7 +108,7 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             if (chunk != null) {
                 String owner = chunk.getOwner();
-                if (event.getCause() == IgniteCause.FLINT_AND_STEEL) {
+                if (event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
                     if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "I")) {
                         if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.ignite"))) {
                             player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsFire"));
@@ -118,7 +118,7 @@ public class MyChunkListener implements Listener {
                 } else if (event.getCause() == IgniteCause.LAVA || event.getCause() == IgniteCause.SPREAD) {
                     event.setCancelled(true);
                 }
-            } else {
+            } else if (!event.getCause().equals(IgniteCause.FLINT_AND_STEEL) || !player.hasPermission("mychunk.override")) {
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsFire"));
                 event.setCancelled(true);
             }
@@ -167,7 +167,7 @@ public class MyChunkListener implements Listener {
                         player.setItemInHand(new ItemStack(326,1));
                     }
                 }
-            } else {
+            } else if (!player.hasPermission("mychunk.override")) {
                 // ProtectUnclaimed
                 if (bucket == 327) {
                     player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsLava"));
@@ -392,7 +392,6 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
-            //} else if (!plugin.allowNether && plugin.getServer().getWorld(chunk.getWorldName()).getEnvironment().equals(Environment.NETHER)) {
             } else if(!plugin.allowNether && player.getWorld().getEnvironment().equals(Environment.NETHER)){
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsNether"));
                 allowed = false;
