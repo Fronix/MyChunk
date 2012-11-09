@@ -1,0 +1,39 @@
+# MyChunk
+# by ellbristow
+# 
+# Configuration File
+# 
+# = Configuration Options =
+# 
+# chunk_price : How much does a chunk cost to claim? (Requires Vault + Economy. Default = 0.00)
+# 
+# unclaim_refund : Do players get a refund when they unclaim a chunk? true|false (Default = false)
+# 
+# max_chunks: What is the maximum number of chunks a player can claim (excluding server) 0 = Unlimited
+# 
+# allow_neighbours: Allow players to claim chunks next to each other
+# 
+# allow_overbuy: Allow players to buy more than max_chunks at a higher price (Requires Vault + Economy)
+# 
+# overbuy_price: price for buying chunks above chunk limit. This amount is ADDED to any chunk price (including [For Sale])
+# 
+# charge_overbuy_on_reslaes: Do players pay the overbuy fee if buying from other players?
+#
+# protect_unclaimed: should players ONLY be able to build in claimed chunks? (Mob protections etc do not apply)
+# 
+# useClaimExpiry: Automatically put plots up for sale if the user is inactive
+# 
+# claimExpiresAfter: Days (Real Life) to wait until a plot is put up for sale due to inactivity
+#
+#
+
+chunk_price: 0.00
+unclaim_refund: false
+max_chunks: 8
+allow_neighbours: false
+allow_overbuy: false
+overbuy_price: 0.00
+charge_overbuy_on_resales: true
+protect_unclaimed: false
+useClaimExpiry: false
+claimExpiresAfter: 7
