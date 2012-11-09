@@ -392,10 +392,11 @@ public class MyChunkListener implements Listener {
                         }
                     }
                 }
-            } else if (!plugin.allowNether && plugin.getServer().getWorld(chunk.getWorldName()).getEnvironment().equals(Environment.NETHER)) {
+            //} else if (!plugin.allowNether && plugin.getServer().getWorld(chunk.getWorldName()).getEnvironment().equals(Environment.NETHER)) {
+            } else if(!plugin.allowNether && player.getWorld().getEnvironment().equals(Environment.NETHER)){
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsNether"));
                 allowed = false;
-            } else if (!plugin.allowEnd && plugin.getServer().getWorld(chunk.getWorldName()).getEnvironment().equals(Environment.THE_END)) {
+            } else if (!plugin.allowEnd && player.getWorld().getEnvironment().equals(Environment.THE_END)) {
                 player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsEnd"));
                 allowed = false;
             }
@@ -1137,11 +1138,13 @@ public class MyChunkListener implements Listener {
     }
     
     private MyChunkChunk getChunk(Block block) {
-        return plugin.chunks.get(block.getWorld().getName()+"_"+block.getChunk().getX()+"_"+block.getChunk().getZ());
+        MyChunkChunk chunk = plugin.chunks.get(block.getWorld().getName()+"_"+block.getChunk().getX()+"_"+block.getChunk().getZ());
+        return chunk;
     }
     
     private MyChunkChunk getChunk(String world, int x, int z) {
-        return plugin.chunks.get(world+"_"+x+"_"+z);
+        MyChunkChunk chunk = plugin.chunks.get(world+"_"+x+"_"+z);
+        return chunk;
     }
     
     private boolean isForSale(MyChunkChunk chunk) {
