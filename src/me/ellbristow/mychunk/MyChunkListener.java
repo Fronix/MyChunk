@@ -103,9 +103,11 @@ public class MyChunkListener implements Listener {
     public void onBlockIgnite (BlockIgniteEvent event) {
         if (event.isCancelled())
             return;
+        Player player = event.getPlayer();
+        if (player == null)
+            return;
         MyChunkChunk chunk = getChunk(event.getBlock());
-        if (chunk!= null || plugin.protectUnclaimed) {
-            Player player = event.getPlayer();
+        if (chunk != null || plugin.protectUnclaimed) {
             if (chunk != null) {
                 String owner = chunk.getOwner();
                 if (event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
