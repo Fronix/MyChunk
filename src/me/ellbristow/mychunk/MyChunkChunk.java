@@ -3,6 +3,7 @@ package me.ellbristow.mychunk;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import me.ellbristow.mychunk.lang.Lang;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
@@ -45,39 +46,52 @@ public class MyChunkChunk {
         chunkZ = chunk.getZ();
         String[] thisDims = {chunkWorld, chunkX+"", chunkZ+""};
         dims = thisDims;
-        owner = plugin.chunkStore.getString(this.dimsToConfigString() + ".owner", "Unowned");
-        Double price = plugin.chunkStore.getDouble(this.dimsToConfigString() + ".forsale");
-        if (price == 0) {
+        HashMap<Integer, HashMap<String, Object>> chunkData = plugin.chunkDb.select("", "MyChunks", "world = '"+chunkWorld+"' AND x = "+chunkX+" AND z = " + chunkZ, "", "");
+        if (chunkData.isEmpty()) {
+            owner = "Unowned";
             claimPrice = plugin.chunkPrice;
             forSale = false;
+            allowMobs = true;
+            lastActive = new Date().getTime() / 1000;
+            chunkNE = findCorner("NE");
+            chunkSE = findCorner("SE");
+            chunkSW = findCorner("SW");
+            chunkNW = findCorner("NW");
         } else {
-            claimPrice = price;
-            forSale = true;
-        }
-        String allowedString = plugin.chunkStore.getString(this.dimsToConfigString() + ".allowed", "");
-        if (!allowedString.equals("")) {
-            for (String allowedPlayer : allowedString.split(";")) {
-                String[] splitPlayer = allowedPlayer.split(":");
-                allowed.put(splitPlayer[0], splitPlayer[1]);
+            owner = (String)chunkData.get(0).get("owner");
+            if (owner.equals("")) owner = "Unowned";
+            Double price = Double.parseDouble(chunkData.get(0).get("salePrice")+"");
+            if (price == 0) {
+                claimPrice = plugin.chunkPrice;
+                forSale = false;
+            } else {
+                claimPrice = price;
+                forSale = true;
             }
-        }
-        chunkNE = findCorner("NE");
-        chunkSE = findCorner("SE");
-        chunkSW = findCorner("SW");
-        chunkNW = findCorner("NW");
-        allowMobs = plugin.chunkStore.getBoolean(this.dimsToConfigString() + ".allowmobs", false);
-        
-        // Claim expiry check
-        lastActive = plugin.chunkStore.getLong(this.dimsToConfigString() + ".lastActive", 0);
-        if (!owner.equalsIgnoreCase("Unowned") && !owner.equalsIgnoreCase("Server")){
-            if (lastActive == 0) {
-                lastActive = new Date().getTime() / 1000;
-                plugin.chunkStore.set(this.dimsToConfigString() + ".lastActive", lastActive);
-                plugin.saveChunkStore();
+            String allowedString = (String)chunkData.get(0).get("allowed");
+            if (!allowedString.equals("")) {
+                for (String allowedPlayer : allowedString.split(";")) {
+                    String[] splitPlayer = allowedPlayer.split(":");
+                    allowed.put(splitPlayer[0], splitPlayer[1]);
+                }
             }
-            if (plugin.useClaimExpiry) {
-                if (lastActive < new Date().getTime() / 1000 - (plugin.claimExpiryDays * 60 * 60 * 24)) {
-                    forSale = true;
+            chunkNE = findCorner("NE");
+            chunkSE = findCorner("SE");
+            chunkSW = findCorner("SW");
+            chunkNW = findCorner("NW");
+            allowMobs = "1".equals(chunkData.get(0).get("allowMobs"));
+
+            // Claim expiry check
+            lastActive = Long.parseLong(chunkData.get(0).get("lastActive")+"");
+            if (!owner.equalsIgnoreCase("Server")){
+                if (lastActive == 0) {
+                    lastActive = new Date().getTime() / 1000;
+                    plugin.chunkDb.query("UPDATE MyChunks SET lastActive = " + lastActive + " WHERE world = '"+chunkWorld+" AND x = " + chunkX + " AND z = " + chunkZ);
+                }
+                if (plugin.useClaimExpiry) {
+                    if (lastActive < new Date().getTime() / 1000 - (plugin.claimExpiryDays * 60 * 60 * 24)) {
+                        forSale = true;
+                    }
                 }
             }
         }
@@ -85,10 +99,8 @@ public class MyChunkChunk {
     
     public void claim(String playerName) {
         this.owner = playerName;
-        plugin.chunkStore.set(this.dimsToConfigString() + ".owner", playerName);
+        plugin.chunkDb.query("INSERT OR REPLACE INTO MyChunks (world, x, z, owner, salePrice, allowMobs, allowed, lastActive) VALUES ('"+chunkWorld+"', "+chunkX+", "+chunkZ+", '"+playerName+"', 0, "+(allowMobs?"1":"0")+", '', "+lastActive+")");
         forSale = false;
-        plugin.chunkStore.set(this.dimsToConfigString() + ".forsale", null);
-        plugin.saveChunkStore();
         if (chunkNE.isLiquid() || chunkNE.getTypeId() == 79) {
             chunkNE.setTypeId(4);
         }
@@ -113,8 +125,7 @@ public class MyChunkChunk {
     
     public void unclaim() {
         owner = "Unowned";
-        plugin.chunkStore.set(this.dimsToConfigString(), null);
-        plugin.saveChunkStore();
+        plugin.chunkDb.query("DELETE FROM MyChunks WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
         Block above = chunkNE.getWorld().getBlockAt(chunkNE.getX(), chunkNE.getY()+1, chunkNE.getZ());
         if (above.getTypeId()==50) {
             above.setTypeId(0);
@@ -226,21 +237,21 @@ public class MyChunkChunk {
         Object[] players = allowed.keySet().toArray();
         if (players.length != 0) {
             if ("*".equals((String)players[0])) {
-                allowedPlayers = plugin.lang.get("Everyone")+"(*)";
+                allowedPlayers = Lang.get("Everyone")+"(*)";
             } else {
                 for (Object player : players) {
                     if (player.equals("*")) {
-                        player = plugin.lang.get("Everyone");
+                        player = Lang.get("Everyone");
                     }
                     allowedPlayers += " " + player + "(" + getAllowedFlags((String)player) + ChatColor.GREEN + ")";
                 }
                 allowedPlayers = allowedPlayers.trim();
                 if ("".equals(allowedPlayers)) {
-                    allowedPlayers = plugin.lang.get("None");
+                    allowedPlayers = Lang.get("None");
                 }
             }
         } else {
-            allowedPlayers = plugin.lang.get("None");
+            allowedPlayers = Lang.get("None");
         }
         return allowedPlayers;
     }
@@ -264,13 +275,13 @@ public class MyChunkChunk {
         if (!"".equals(flags)) {
             return ChatColor.GREEN + flags;
         } else {
-            return ChatColor.RED + plugin.lang.get("None");
+            return ChatColor.RED + Lang.get("None");
         }
     }
     
     public void setAllowMobs(Boolean allow) {
         allowMobs = allow;
-        plugin.chunkStore.set(this.dimsToConfigString() + ".allowmobs", allow);
+        plugin.chunkDb.query("UPDATE MyChunks SET allowMobs = " + (allow?"1":"0") + " WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
     }
     
     public boolean getAllowMobs() {
@@ -291,12 +302,12 @@ public class MyChunkChunk {
         return price;
     }
     
-    public String[] getNeighbours() {
-        MyChunkChunk chunkX1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX + 1, chunkZ).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkX2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX - 1, chunkZ).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkZ1 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ + 1).getBlock(5, 64, 5), plugin);
-        MyChunkChunk chunkZ2 = new MyChunkChunk(chunk.getWorld().getChunkAt(chunkX, chunkZ - 1).getBlock(5, 64, 5), plugin);
-        String[] neighbours = {chunkX1.getOwner(), chunkX2.getOwner(), chunkZ1.getOwner(), chunkZ2.getOwner()};
+    public MyChunkChunk[] getNeighbours() {
+        MyChunkChunk chunkX1 = new MyChunkChunk(chunkWorld, chunkX + 1, chunkZ, plugin);
+        MyChunkChunk chunkX2 = new MyChunkChunk(chunkWorld, chunkX - 1, chunkZ, plugin);
+        MyChunkChunk chunkZ1 = new MyChunkChunk(chunkWorld, chunkX, chunkZ + 1, plugin);
+        MyChunkChunk chunkZ2 = new MyChunkChunk(chunkWorld, chunkX, chunkZ - 1, plugin);
+        MyChunkChunk[] neighbours = {chunkX1, chunkX2, chunkZ1, chunkZ2};
         return neighbours;
     }
     
@@ -317,21 +328,16 @@ public class MyChunkChunk {
     }
     
     public boolean hasNeighbours() {
-        MyChunkChunk chunkX1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunkX + 1)+"_"+chunkZ);
-        MyChunkChunk chunkX2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunkX - 1)+"_"+chunkZ);
-        MyChunkChunk chunkZ1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunkX+"_"+(chunkZ+1));
-        MyChunkChunk chunkZ2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunkX+"_"+(chunkZ-1));
-        if (chunkX1 != null || chunkX2 != null || chunkZ1 != null || chunkZ2 != null) {
-            return true;
+        HashMap<Integer, HashMap<String, Object>> results = plugin.chunkDb.select("owner", "MyChunks", "world = '"+chunkWorld+"' AND ("
+                                                          + "(x = "+(chunkX + 1)+" AND z = "+chunkZ+") OR "
+                                                          + "(x = "+(chunkX - 1)+" AND z = "+chunkZ+") OR "
+                                                          + "(x = "+chunkX+" AND z = "+(chunkZ + 1)+") OR "
+                                                          + "(x = "+chunkX+" AND z = "+(chunkZ - 1)+")"
+                                                          + ")", "", "");
+        if (results.isEmpty()) {
+            return false;
         }
-        return false;
-    }
-    
-    public boolean isClaimed() {
-        if (!owner.equalsIgnoreCase("Unowned")) {
-            return true;
-        }
-        return false;
+        return true;
     }
     
     public boolean isAllowed(String playerName, String flag) {
@@ -360,6 +366,14 @@ public class MyChunkChunk {
         return false;
     }
     
+    public boolean isClaimed() {
+        if (owner.equalsIgnoreCase("Unowned")) {
+            return false;
+        }
+        return true;
+    }
+            
+    
     public boolean isFlag(String flag) {
         for (String thisFlag : availableFlags) {
             if (thisFlag.equalsIgnoreCase(flag)) {
@@ -376,20 +390,17 @@ public class MyChunkChunk {
     public void setForSale(Double price) {
         forSale = true;
         claimPrice = price;
-        plugin.chunkStore.set(this.dimsToConfigString() + ".forsale", price);
-        plugin.saveChunkStore();
+        plugin.chunkDb.query("UPDATE MyChunks SET salePrice = " + claimPrice + " WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
     }
     
     public void setNotForSale() {
         forSale = false;
-        plugin.chunkStore.set(this.dimsToConfigString() + ".forsale", null);
-        plugin.saveChunkStore();
+        plugin.chunkDb.query("UPDATE MyChunks SET salePrice = 0 WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
     }
     
     public void setOwner (String newOwner) {
         if (isClaimed()) {
-            plugin.chunkStore.set(this.dimsToConfigString() + ".owner", newOwner);
-            plugin.saveChunkStore();
+            plugin.chunkDb.query("UPDATE MyChunks SET owner = '"+newOwner+"' WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
         } else {
             claim(newOwner);
         }
@@ -451,7 +462,7 @@ public class MyChunkChunk {
     
     private void savePerms() {
         if (allowed.isEmpty()) {
-            plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", null);
+            plugin.chunkDb.query("UPDATE MyChunks SET allowed = '' WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
         } else {
             String newAllowed = "";
             Object[] allowedPlayers = allowed.keySet().toArray();
@@ -467,11 +478,10 @@ public class MyChunkChunk {
                 }
             }
             if ("".equals(newAllowed)) {
-                plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", null);
+                plugin.chunkDb.query("UPDATE MyChunks SET allowed = '' WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
             } else {
-                plugin.chunkStore.set(this.dimsToConfigString() + ".allowed", newAllowed);
+                plugin.chunkDb.query("UPDATE MyChunks SET allowed = '"+newAllowed+"' WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
             }
-            plugin.saveChunkStore();
         }
     }
 

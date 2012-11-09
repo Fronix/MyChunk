@@ -1,6 +1,7 @@
 package me.ellbristow.mychunk;
 
 import java.util.*;
+import me.ellbristow.mychunk.lang.Lang;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -11,10 +12,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.block.*;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityBreakDoorEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
@@ -39,7 +37,7 @@ public class MyChunkListener implements Listener {
             for (Iterator<Block> it = blocks.iterator(); it.hasNext();) {
                 Block block = it.next();
                 MyChunkChunk chunk = getChunk(block);
-                if (chunk != null || plugin.protectUnclaimed) {
+                if (chunk.isClaimed() || plugin.protectUnclaimed) {
                     saveBanks.add(block);
                 }
                 index++;
@@ -56,22 +54,22 @@ public class MyChunkListener implements Listener {
             return;
         Block block = event.getBlock();
         MyChunkChunk chunk = getChunk(block);
-        if (chunk != null || plugin.protectUnclaimed) {
+        if (chunk.isClaimed() || plugin.protectUnclaimed) {
             Player player = event.getPlayer();
-            if (chunk != null) {
+            if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
                 if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBuild"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
                         if (block.getTypeId() != 63 && block.getTypeId() != 68) {
                             event.setCancelled(true);
                         }
                     }
                 }
             } else if (!player.hasPermission("mychunk.override")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBuild"));
                 if (block.getTypeId() != 63 && block.getTypeId() != 68) {
                     event.setCancelled(true);
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
                 }
             }
         }
@@ -82,18 +80,18 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         MyChunkChunk chunk = getChunk(event.getBlock());
-        if (chunk != null || plugin.protectUnclaimed) {
+        if (chunk.isClaimed() || plugin.protectUnclaimed) {
             Player player = event.getPlayer();
-            if (chunk != null) {
+            if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
                 if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
                         event.setCancelled(true);
                     }
                 }
             } else if (!player.hasPermission("mychunk.override")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
                 event.setCancelled(true);
             }
         }
@@ -104,23 +102,26 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         MyChunkChunk chunk = getChunk(event.getBlock());
-        if (chunk!= null || plugin.protectUnclaimed) {
-            Player player = event.getPlayer();
-            if (chunk != null) {
+        if (chunk.isClaimed() || plugin.protectUnclaimed) {
+            if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
                 if (event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+                    Player player = event.getPlayer();
                     if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "I")) {
                         if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.ignite"))) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsFire"));
+                            player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
                             event.setCancelled(true);
                         }
                     }
                 } else if (event.getCause() == IgniteCause.LAVA || event.getCause() == IgniteCause.SPREAD) {
                     event.setCancelled(true);
                 }
-            } else if (!event.getCause().equals(IgniteCause.FLINT_AND_STEEL) || !player.hasPermission("mychunk.override")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsFire"));
-                event.setCancelled(true);
+            } else if (!event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+                Player player = event.getPlayer();
+                if (player != null && !player.hasPermission("mychunk.override")) {
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
+                    event.setCancelled(true);
+                }
             }
         }
     }
@@ -131,7 +132,7 @@ public class MyChunkListener implements Listener {
             return;
         if (event.getBlock().getTypeId() == 64 && event.getEntityType().equals(EntityType.ZOMBIE)) {
             MyChunkChunk chunk = getChunk(event.getBlock());
-            if (chunk != null || plugin.protectUnclaimed) {
+            if (chunk.isClaimed() || plugin.protectUnclaimed) {
                 event.setCancelled(true);
             }
         }
@@ -150,19 +151,19 @@ public class MyChunkListener implements Listener {
             targetBlock = block.getRelative(face);
         }
         MyChunkChunk chunk = getChunk(targetBlock);
-        if (chunk != null || plugin.protectUnclaimed) {
+        if (chunk.isClaimed() || plugin.protectUnclaimed) {
             // Claimed
             Player player = event.getPlayer();
             int bucket = event.getBucket().getId();
-            if (chunk != null) {
+            if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
-                if ((!owner.equalsIgnoreCase(player.getName()) && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
+                if ((owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build")) || (!owner.equalsIgnoreCase(player.getName()) && !player.hasPermission("mychunk.override"))) {
                     if (bucket == 327 && !chunk.isAllowed(player.getName(), "L")) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsLava"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsLava"));
                         event.setCancelled(true);
                         player.setItemInHand(new ItemStack(327,1));
                     } else if (bucket == 326 && !chunk.isAllowed(player.getName(), "W")) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsWater"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsWater"));
                         event.setCancelled(true);
                         player.setItemInHand(new ItemStack(326,1));
                     }
@@ -170,11 +171,11 @@ public class MyChunkListener implements Listener {
             } else if (!player.hasPermission("mychunk.override")) {
                 // ProtectUnclaimed
                 if (bucket == 327) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsLava"));
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsLava"));
                     event.setCancelled(true);
                     player.setItemInHand(new ItemStack(327,1));
                 } else if (bucket == 326) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsWater"));
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsWater"));
                     event.setCancelled(true);
                     player.setItemInHand(new ItemStack(326,1));
                 }
@@ -189,16 +190,16 @@ public class MyChunkListener implements Listener {
         if (event.getAction().equals(Action.LEFT_CLICK_BLOCK) || event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
             Block block = event.getClickedBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (chunk == null) return;
+            if (!chunk.isClaimed()) return;
             Player player = event.getPlayer();
             String owner = chunk.getOwner();
             if (block.getTypeId() == 64 || block.getTypeId() == 96 || block.getTypeId() == 107) {
                 if (!owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "O")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.doors"))) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsDoor"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsDoor"));
                         OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                         if (ownerPlayer.isOnline()) {
-                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + plugin.lang.get("NoPermsDoorOwner"));
+                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + Lang.get("NoPermsDoorOwner"));
                         }
                         event.setCancelled(true);
                     }
@@ -206,10 +207,10 @@ public class MyChunkListener implements Listener {
             } else if (block.getTypeId() == 77) {
                 if (!owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsButton"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsButton"));
                         OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                         if (ownerPlayer.isOnline()) {
-                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + plugin.lang.get("NoPermsButtonOwner"));
+                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + Lang.get("NoPermsButtonOwner"));
                         }
                         event.setCancelled(true);
                     }
@@ -217,10 +218,10 @@ public class MyChunkListener implements Listener {
             } else if (block.getTypeId() == 69) {
                 if (!owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsLever"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsLever"));
                         OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                         if (ownerPlayer.isOnline()) {
-                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + plugin.lang.get("NoPermsLeverOwner"));
+                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + Lang.get("NoPermsLeverOwner"));
                         }
                         event.setCancelled(true);
                     }
@@ -228,10 +229,10 @@ public class MyChunkListener implements Listener {
             } else if (block.getTypeId() == 54) {
                 if (!owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "C")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.chests"))) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsChest"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsChest"));
                         OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                         if (ownerPlayer.isOnline()) {
-                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + plugin.lang.get("NoPermsChestOwner"));
+                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + Lang.get("NoPermsChestOwner"));
                         }
                         event.setCancelled(true);
                     }
@@ -239,10 +240,10 @@ public class MyChunkListener implements Listener {
             } else if (block.getTypeId() == 61 || block.getTypeId() == 62 || block.getTypeId() == 23 || block.getTypeId() == 117) {
                 if (!owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "S")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.special"))) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsSpecial"));
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsSpecial"));
                         OfflinePlayer ownerPlayer = plugin.getServer().getOfflinePlayer(owner);
                         if (ownerPlayer.isOnline()) {
-                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + plugin.lang.get("NoPermsSpecialOwner"));
+                            ownerPlayer.getPlayer().sendMessage(ChatColor.GOLD + Lang.get("NoPermsSpecialOwner"));
                         }
                         event.setCancelled(true);
                     }
@@ -252,7 +253,7 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             Block block = player.getLocation().getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (chunk == null) return;
+            if (!chunk.isClaimed()) return;
             String owner = chunk.getOwner();
             if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
                 if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
@@ -272,10 +273,10 @@ public class MyChunkListener implements Listener {
             MyChunkChunk fromChunk = getChunk(fromLoc.getBlock());
             MyChunkChunk toChunk = getChunk(toLoc.getBlock());
             Player player = event.getPlayer();
-            if ((fromChunk != null || toChunk != null) && ((fromChunk == null && toChunk != null) || (toChunk == null && fromChunk != null) || !fromChunk.getOwner().equals(toChunk.getOwner()))) {
+            if (!fromChunk.getOwner().equalsIgnoreCase(toChunk.getOwner())) {
                 String forSale = "";
-                if (isForSale(toChunk)) {
-                    forSale = ChatColor.YELLOW + " ["+plugin.lang.get("ChunkForSale");
+                if (toChunk.isForSale()) {
+                    forSale = ChatColor.YELLOW + " ["+Lang.get("ChunkForSale");
                     if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
                         if (plugin.ownedChunkCount(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy) {
                             forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
@@ -285,15 +286,15 @@ public class MyChunkListener implements Listener {
                     }
                     forSale += "]";
                 }
-                if (toChunk == null) {
-                    player.sendMessage(ChatColor.GRAY + "~"+plugin.lang.get("Unowned"));
+                if (!toChunk.isClaimed()) {
+                    player.sendMessage(ChatColor.GRAY + "~"+Lang.get("Unowned"));
                 } else if (toChunk.getOwner().equalsIgnoreCase("server")) {
-                    player.sendMessage(ChatColor.LIGHT_PURPLE + "~"+plugin.lang.get("Server") + forSale);
+                    player.sendMessage(ChatColor.LIGHT_PURPLE + "~"+Lang.get("Server") + forSale);
                 } else {
                     player.sendMessage(ChatColor.GOLD + "~" + toChunk.getOwner() + forSale);
                 }
-            } else if (isForSale(toChunk)) {
-                String forSale = ChatColor.YELLOW + "["+plugin.lang.get("ChunkForSale");
+            } else if (toChunk.isForSale()) {
+                String forSale = ChatColor.YELLOW + "["+Lang.get("ChunkForSale");
                 if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
                     if (plugin.ownedChunkCount(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy || (plugin.allowOverbuy && player.hasPermission("mychunk.free"))) {
                         forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
@@ -314,7 +315,7 @@ public class MyChunkListener implements Listener {
         LivingEntity mob = event.getEntity();
         if (mob instanceof Monster || mob instanceof Slime) {
             MyChunkChunk chunk = getChunk(event.getLocation().getBlock());
-            if (chunk != null && !chunk.getAllowMobs()) {
+            if (chunk.isClaimed() && !chunk.getAllowMobs()) {
                 event.setCancelled(true);
             }
         }
@@ -328,22 +329,22 @@ public class MyChunkListener implements Listener {
         if (entity instanceof Player) {
             Player player = (Player)entity;
             MyChunkChunk chunk = getChunk(player.getLocation().getBlock());
-            if (chunk != null) {
+            if (chunk.isClaimed()) {
                 Entity damager = event.getDamager();
                 if (damager instanceof Player) {
                     event.setCancelled(true);
                     Player naughty = (Player)damager;
-                    naughty.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsPVP"));
+                    naughty.sendMessage(ChatColor.RED + Lang.get("NoPermsPVP"));
                 } else if (damager instanceof Monster || damager instanceof Slime) {
                     if (!chunk.getAllowMobs()) {
                         event.setCancelled(true);
                     }
-                } else if (damager instanceof Arrow) {
-                    Entity shooter = ((Arrow) event.getDamager()).getShooter();
+                } else if (damager instanceof Projectile) {
+                    Entity shooter = ((Projectile) event.getDamager()).getShooter();
                     if (shooter instanceof Player && entity instanceof Player) {
                         event.setCancelled(true);
                     } else if (shooter instanceof Monster && entity instanceof Player) {
-                        if (chunk.isClaimed() && !chunk.getAllowMobs()) {
+                        if (!chunk.getAllowMobs()) {
                             event.setCancelled(true);
                         }
                     }
@@ -353,9 +354,29 @@ public class MyChunkListener implements Listener {
     }
     
     @EventHandler (priority = EventPriority.NORMAL)
+    public void onPotionSplash(PotionSplashEvent event) {
+        ThrownPotion potion = event.getPotion();
+        MyChunkChunk chunk = getChunk(potion.getLocation().getBlock());
+        if (chunk.isClaimed()) {
+            if (chunk.getOwner().equalsIgnoreCase("Server")) {
+                event.setCancelled(true);
+            } else {
+                LivingEntity shooter = potion.getShooter();
+                if (shooter instanceof Player) {
+                    Player player = (Player)shooter;
+                    if (chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                        event.setCancelled(true);
+                    }
+                } else {
+                    event.setCancelled(true);
+                }
+            }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
     public void onSignChange (SignChangeEvent event) {
-        if (event.isCancelled())
-            return;
+        if (event.isCancelled()) return;
         String line0 = event.getLine(0);
         String line1 = event.getLine(1);
         if (line0.equalsIgnoreCase("[claim]")) {
@@ -365,47 +386,39 @@ public class MyChunkListener implements Listener {
             MyChunkChunk chunk = getChunk(block);
             boolean allowed = true;
             if (!player.hasPermission("mychunk.claim") && !player.hasPermission("mychunk.claim.server")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaim"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsClaim"));
                 allowed = false;
-            } else if (chunk != null) {
+            } else if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
                 if (owner.equalsIgnoreCase(player.getName())) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("AlreadyOwner"));
+                    player.sendMessage(ChatColor.RED + Lang.get("AlreadyOwner"));
                     allowed = false;
                 } else if (!chunk.isForSale()) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("AlreadyOwned")+" " + ChatColor.WHITE + owner + ChatColor.RED + "!");
+                    player.sendMessage(ChatColor.RED + Lang.get("AlreadyOwned")+" " + ChatColor.WHITE + owner + ChatColor.RED + "!");
                     allowed = false;
                 } else if (chunk.isForSale() && !player.hasPermission("mychunk.buy")) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBuyOwned"));
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuyOwned"));
                     allowed = false;
                 }
-            } else if (!plugin.allowNeighbours && hasNeighbours(block.getChunk()) && !isForSale(chunk)) {
-                String[] neighbours = getNeighbours(block.getChunk());
-                for (int i = 0; i<neighbours.length; i++) {
-                    if (!neighbours[i].equalsIgnoreCase("") && !neighbours[i].equalsIgnoreCase("server") && !neighbours[i].equalsIgnoreCase("unowned")) {
-                        if (!neighbours[i].equalsIgnoreCase(player.getName()) && line1.equalsIgnoreCase("")) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("NoNeighbours"));
-                            allowed = false;
-                        } else if (!line1.equals("") && !neighbours[i].equalsIgnoreCase(line1) && !line1.equalsIgnoreCase("server")) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("NoNeighbours"));
-                            allowed = false;
-                        }
-                    }
+            } else if (!plugin.allowNeighbours && chunk.hasNeighbours() && chunk.isForSale()) {
+                MyChunkChunk[] neighbours = chunk.getNeighbours();
+                if (!neighbours[0].getOwner().equalsIgnoreCase(line1) || !neighbours[1].getOwner().equalsIgnoreCase(line1) || !neighbours[2].getOwner().equalsIgnoreCase(line1) || !neighbours[3].getOwner().equalsIgnoreCase(line1)) {
+                    player.sendMessage(ChatColor.RED + Lang.get("NoNeighbours"));
                 }
             } else if(!plugin.allowNether && player.getWorld().getEnvironment().equals(Environment.NETHER)){
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsNether"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsNether"));
                 allowed = false;
             } else if (!plugin.allowEnd && player.getWorld().getEnvironment().equals(Environment.THE_END)) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsEnd"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsEnd"));
                 allowed = false;
             }
             int playerMax = plugin.getMaxChunks(player);
-            if (plugin.foundEconomy && getClaimPrice(chunk) != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunkCount(player.getName()) < playerMax) && plugin.vault.economy.getBalance(player.getName()) < getClaimPrice(chunk)) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("CantAfford")+" ("+plugin.lang.get("Price")+": " + ChatColor.WHITE + plugin.vault.economy.format(getClaimPrice(chunk)) + ChatColor.RED + ")!");
+            if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunkCount(player.getName()) < playerMax) && plugin.vault.economy.getBalance(player.getName()) < chunk.getClaimPrice()) {
+                player.sendMessage(ChatColor.RED + Lang.get("CantAfford")+" ("+Lang.get("Price")+": " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.RED + ")!");
                 allowed = false;
             } else if (plugin.foundEconomy && playerMax != 0 && plugin.ownedChunkCount(player.getName()) >= playerMax && !player.hasPermission("mychunk.free")) {
-                if (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy") && plugin.vault.economy.getBalance(player.getName()) < getOverbuyPrice(chunk)) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("CantAfford")+" ("+plugin.lang.get("Price")+": " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getOverbuyPrice()) + ChatColor.RED + ")!");
+                if (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy") && plugin.vault.economy.getBalance(player.getName()) < chunk.getOverbuyPrice()) {
+                    player.sendMessage(ChatColor.RED + Lang.get("CantAfford")+" ("+Lang.get("Price")+": " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getOverbuyPrice()) + ChatColor.RED + ")!");
                     allowed = false;
                 }
             }
@@ -413,41 +426,40 @@ public class MyChunkListener implements Listener {
                 if (line1.equals("") || line1.equalsIgnoreCase(player.getName())) {
                     int ownedChunks = plugin.ownedChunkCount(player.getName());
                     if ((ownedChunks < playerMax || (plugin.allowOverbuy && player.hasPermission("mychunk.claim.overbuy"))) || player.hasPermission("mychunk.claim.unlimited") || playerMax == 0) {
-                        if (plugin.foundEconomy && getClaimPrice(chunk) != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunkCount(player.getName()) < playerMax)) {
-                            plugin.vault.economy.withdrawPlayer(player.getName(), getClaimPrice(chunk));
-                            player.sendMessage(plugin.vault.economy.format(getClaimPrice(chunk)) + ChatColor.GOLD + " "+plugin.lang.get("AmountDeducted"));
+                        if (plugin.foundEconomy && chunk.getClaimPrice() != 0 && !player.hasPermission("mychunk.free") && (playerMax == 0 || plugin.ownedChunkCount(player.getName()) < playerMax)) {
+                            plugin.vault.economy.withdrawPlayer(player.getName(), chunk.getClaimPrice());
+                            player.sendMessage(plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + " "+Lang.get("AmountDeducted"));
                         } else if (plugin.foundEconomy && plugin.allowOverbuy && plugin.ownedChunkCount(player.getName()) >= playerMax && !player.hasPermission("mychunk.free")) {
                             double price;
                             if (plugin.overbuyP2P) {
-                                price = getOverbuyPrice(chunk);
+                                price = chunk.getOverbuyPrice();
                             } else {
-                                price = getClaimPrice(chunk);
+                                price = chunk.getClaimPrice();
                             }
                             plugin.vault.economy.withdrawPlayer(player.getName(), price);
-                            player.sendMessage(plugin.vault.economy.format(price) + ChatColor.GOLD + " "+plugin.lang.get("AmountDeducted"));
+                            player.sendMessage(plugin.vault.economy.format(price) + ChatColor.GOLD + " "+Lang.get("AmountDeducted"));
                         }
-                        if (plugin.foundEconomy && isForSale(chunk)) {
-                            plugin.vault.economy.depositPlayer(chunk.getOwner(), getClaimPrice(chunk));
+                        if (plugin.foundEconomy && chunk.isForSale()) {
+                            plugin.vault.economy.depositPlayer(chunk.getOwner(), chunk.getClaimPrice());
                             OfflinePlayer oldOwner = plugin.getServer().getOfflinePlayer(chunk.getOwner());
                             if (oldOwner.isOnline()) {
-                                oldOwner.getPlayer().sendMessage(player.getName() + ChatColor.GOLD + " "+plugin.lang.get("BoughtFor")+" " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + "!");
+                                oldOwner.getPlayer().sendMessage(player.getName() + ChatColor.GOLD + " "+Lang.get("BoughtFor")+" " + ChatColor.WHITE + plugin.vault.economy.format(chunk.getClaimPrice()) + ChatColor.GOLD + "!");
                             }
                         }
                         if (chunk == null) {
                             chunk = new MyChunkChunk(block,plugin);
                         }
                         chunk.claim(player.getName());
-                        plugin.chunks.put(chunk.getWorldName()+"_"+chunk.getX()+"_"+chunk.getZ(), chunk);
-                        player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunkClaimed"));
+                        player.sendMessage(ChatColor.GOLD + Lang.get("ChunkClaimed"));
                     } else {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("AlreadyOwn")+" " + ownedChunks + " "+plugin.lang.get("Chunks")+"! (Max " + playerMax + ")");
+                        player.sendMessage(ChatColor.RED + Lang.get("AlreadyOwn")+" " + ownedChunks + " "+Lang.get("Chunks")+"! (Max " + playerMax + ")");
                     }
                 } else {
                     String correctName = "";
                     allowed = true;
                     if (line1.equalsIgnoreCase("server")) {
                         if (!player.hasPermission("mychunk.claim.server")) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaimServer"));
+                            player.sendMessage(ChatColor.RED + Lang.get("NoPermsClaimServer"));
                             allowed = false;
                         } else {
                             correctName = "Server";
@@ -456,28 +468,24 @@ public class MyChunkListener implements Listener {
                         if (player.hasPermission("mychunk.claim.others")) {
                             OfflinePlayer target = plugin.getServer().getOfflinePlayer(line1);
                             if (!target.hasPlayedBefore()) {
-                                player.sendMessage(ChatColor.RED + plugin.lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+plugin.lang.get("NotFound")+"!");
+                                player.sendMessage(ChatColor.RED + Lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+Lang.get("NotFound")+"!");
                                 allowed = false;
                             } else {
                                 correctName = target.getName();
                             }
                         } else {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaimOther"));
+                            player.sendMessage(ChatColor.RED + Lang.get("NoPermsClaimOther"));
                             allowed = false;
                         }
                     }
                     if (allowed) {
                         int ownedChunks = plugin.ownedChunkCount(player.getName());
                         if ((ownedChunks < plugin.maxChunks) || player.hasPermission("mychunk.claim.others.unlimited") || plugin.maxChunks == 0 || (correctName.equalsIgnoreCase("server") && player.hasPermission("mychunk.server.claim"))) {
-                            if (chunk == null) {
-                                chunk = new MyChunkChunk(block,plugin);
-                            }
                             chunk.claim(correctName);
-                            plugin.chunks.put(chunk.getWorldName()+"_"+chunk.getX()+"_"+chunk.getZ(), chunk);
-                            player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunkClaimedFor")+" " + ChatColor.WHITE + correctName + ChatColor.GOLD + "!");
+                            player.sendMessage(ChatColor.GOLD + Lang.get("ChunkClaimedFor")+" " + ChatColor.WHITE + correctName + ChatColor.GOLD + "!");
                             if (plugin.foundEconomy && plugin.chunkPrice != 0 && !correctName.equalsIgnoreCase("server") && !player.hasPermission("mychunk.free")) {
                                 plugin.vault.economy.withdrawPlayer(player.getName(), plugin.chunkPrice);
-                                player.sendMessage(plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.GOLD + " "+plugin.lang.get("AmountDeducted"));
+                                player.sendMessage(plugin.vault.economy.format(plugin.chunkPrice) + ChatColor.GOLD + " "+Lang.get("AmountDeducted"));
                             }
                         }
                     }
@@ -490,16 +498,16 @@ public class MyChunkListener implements Listener {
             Block block = event.getBlock();
             boolean allowed = true;
             if (!player.hasPermission("mychunk.claim")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaim"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsClaim"));
                 allowed = false;
             } else if (!player.hasPermission("mychunk.claim.area")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaimArea"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsClaimArea"));
                 allowed = false;
             } else if (!plugin.allowNether && block.getWorld().getEnvironment().equals(Environment.NETHER)) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsNether"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsNether"));
                 allowed = false;
             } else if (!plugin.allowEnd && block.getWorld().getEnvironment().equals(Environment.THE_END)) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsEnd"));
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsEnd"));
                 allowed = false;
             }
             if (allowed) {
@@ -509,7 +517,7 @@ public class MyChunkListener implements Listener {
                 } else {
                     if (line1.equalsIgnoreCase("server")) {
                         if (!player.hasPermission("mychunk.claim.server")) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaimServer"));
+                            player.sendMessage(ChatColor.RED + Lang.get("NoPermsClaimServer"));
                             event.setCancelled(true);
                             breakSign(block);
                             return;
@@ -520,7 +528,7 @@ public class MyChunkListener implements Listener {
                         if (player.hasPermission("mychunk.claim.others")) {
                             OfflinePlayer target = plugin.getServer().getOfflinePlayer(line1);
                             if (!target.hasPlayedBefore()) {
-                                player.sendMessage(ChatColor.RED + plugin.lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+plugin.lang.get("NotFound")+"!");
+                                player.sendMessage(ChatColor.RED + Lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+Lang.get("NotFound")+"!");
                                 event.setCancelled(true);
                                 breakSign(block);
                                 return;
@@ -528,7 +536,7 @@ public class MyChunkListener implements Listener {
                                 correctName = target.getName();
                             }
                         } else {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsClaimOther"));
+                            player.sendMessage(ChatColor.RED + Lang.get("NoPermsClaimOther"));
                             event.setCancelled(true);
                             breakSign(block);
                             return;
@@ -538,19 +546,19 @@ public class MyChunkListener implements Listener {
                 event.setLine(1, correctName);
                 if (event.getLine(2).equalsIgnoreCase("cancel")) {
                     plugin.pendingAreas.remove(correctName);
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("ClaimAreaCancelled"));
+                    player.sendMessage(ChatColor.RED + Lang.get("ClaimAreaCancelled"));
                     event.setCancelled(true);
                     breakSign(block);
                     return;
                 }
                 if (!plugin.pendingAreas.containsKey(correctName)) {
                     plugin.pendingAreas.put(correctName, event.getBlock());
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("StartClaimArea1"));
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("StartClaimArea2"));
+                    player.sendMessage(ChatColor.GOLD + Lang.get("StartClaimArea1"));
+                    player.sendMessage(ChatColor.GOLD + Lang.get("StartClaimArea2"));
                 } else {
                     Block startBlock = plugin.pendingAreas.get(correctName);
                     if (startBlock.getWorld() != block.getWorld()) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("ClaimAreaWorldError"));
+                        player.sendMessage(ChatColor.RED + Lang.get("ClaimAreaWorldError"));
                         event.setCancelled(true);
                         breakSign(block);
                         return;
@@ -586,33 +594,22 @@ public class MyChunkListener implements Listener {
                             if (chunkCount < 64) {
                                 Chunk thisChunk = block.getWorld().getChunkAt(x, z);
                                 MyChunkChunk myChunk = getChunk(block.getWorld().getName(), x, z);
-                                if (myChunk != null) {
-                                    if (!myChunk.getOwner().equalsIgnoreCase(correctName)) {
-                                        foundClaimed = true;
-                                        break xloop;
-                                    } else if (myChunk.hasNeighbours()) {
-                                        String[] neighbours = myChunk.getNeighbours();
-                                        for (String neighbour : neighbours) {
-                                            if (!neighbour.equalsIgnoreCase("Server")) {
-                                                foundNeighbour = true;
-                                            }
-                                        }
-                                        if (!plugin.allowNeighbours) break xloop;
-                                    }
-                                } else if (hasNeighbours(thisChunk)) {
-                                    String[] neighbours = getNeighbours(thisChunk);
-                                    for (String neighbour : neighbours) {
-                                        if (!neighbour.equalsIgnoreCase("Server")) {
+                                if (myChunk.isClaimed() && !myChunk.getOwner().equalsIgnoreCase(correctName) && myChunk.isForSale()) {
+                                    foundClaimed = true;
+                                    break xloop;
+                                } else if (myChunk.hasNeighbours()) {
+                                    MyChunkChunk[] neighbours = myChunk.getNeighbours();
+                                    for (MyChunkChunk neighbour : neighbours) {
+                                        if (neighbour.isClaimed() && !neighbour.getOwner().equalsIgnoreCase(correctName) && !neighbour.getOwner().equalsIgnoreCase("Server") && !myChunk.isForSale()) {
                                             foundNeighbour = true;
+                                            if (!plugin.allowNeighbours) break xloop;
                                         }
                                     }
-                                    if (!plugin.allowNeighbours) break xloop;
-                                } else {
-                                    foundChunks.add(thisChunk);
-                                    chunkCount++;
                                 }
+                                foundChunks.add(thisChunk);
+                                chunkCount++;
                             } else {
-                                player.sendMessage(ChatColor.RED + plugin.lang.get("AreaTooBig"));
+                                player.sendMessage(ChatColor.RED + Lang.get("AreaTooBig"));
                                 event.setCancelled(true);
                                 breakSign(block);
                                 return;
@@ -620,13 +617,13 @@ public class MyChunkListener implements Listener {
                         }
                     }
                     if (foundClaimed) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("FoundClaimedInArea"));
+                        player.sendMessage(ChatColor.RED + Lang.get("FoundClaimedInArea"));
                         event.setCancelled(true);
                         breakSign(block);
                         return;
                     }
                     if (foundNeighbour && !plugin.allowNeighbours) {
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("FoundNeighboursInArea"));
+                        player.sendMessage(ChatColor.RED + Lang.get("FoundNeighboursInArea"));
                         event.setCancelled(true);
                         breakSign(block);
                         return;
@@ -634,10 +631,10 @@ public class MyChunkListener implements Listener {
                     int claimed = plugin.ownedChunkCount(correctName);
                     int max = plugin.getMaxChunks(plugin.getServer().getOfflinePlayer(correctName).getPlayer());
                     if (max != 0 && (!plugin.allowOverbuy || !player.hasPermission("mychunk.claim.overbuy")) && max - claimed < foundChunks.size()) {
-                        player.sendMessage(ChatColor.RED + (correctName.equalsIgnoreCase(player.getName())?"You":correctName) + plugin.lang.get("ClaimAreaTooLarge"));
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("ChunksOwned")+": " + ChatColor.WHITE + claimed);
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("ChunkMax")+": " + ChatColor.WHITE + max);
-                        player.sendMessage(ChatColor.RED + plugin.lang.get("ChunksInArea") + ": " + chunkCount);
+                        player.sendMessage(ChatColor.RED + (correctName.equalsIgnoreCase(player.getName())?"You":correctName) + Lang.get("ClaimAreaTooLarge"));
+                        player.sendMessage(ChatColor.RED + Lang.get("ChunksOwned")+": " + ChatColor.WHITE + claimed);
+                        player.sendMessage(ChatColor.RED + Lang.get("ChunkMax")+": " + ChatColor.WHITE + max);
+                        player.sendMessage(ChatColor.RED + Lang.get("ChunksInArea") + ": " + chunkCount);
                         event.setCancelled(true);
                         breakSign(block);
                         return;
@@ -649,28 +646,27 @@ public class MyChunkListener implements Listener {
                         for (Chunk chunk : foundChunks) {
                             MyChunkChunk myChunk = getChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
                             if (allowance > 0) {
-                                areaPrice += getClaimPrice(myChunk);
+                                areaPrice += myChunk.getClaimPrice();
                                 allowance--;
                             } else {
-                                areaPrice += getOverbuyPrice(myChunk);
+                                areaPrice += myChunk.getOverbuyPrice();
                             }
                         }
                         if (plugin.vault.economy.getBalance(player.getName()) < areaPrice) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("CantAffordClaimArea"));
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("Price")+": " + ChatColor.WHITE + plugin.vault.economy.format(areaPrice));
+                            player.sendMessage(ChatColor.RED + Lang.get("CantAffordClaimArea"));
+                            player.sendMessage(ChatColor.RED + Lang.get("Price")+": " + ChatColor.WHITE + plugin.vault.economy.format(areaPrice));
                             event.setCancelled(true);
                             breakSign(block);
                             return;
                         }
                         plugin.vault.economy.withdrawPlayer(player.getName(), areaPrice);
-                        player.sendMessage(ChatColor.GOLD + plugin.lang.get("YouWereCharged")+" "+ChatColor.WHITE+plugin.vault.economy.format(areaPrice));
+                        player.sendMessage(ChatColor.GOLD + Lang.get("YouWereCharged")+" "+ChatColor.WHITE+plugin.vault.economy.format(areaPrice));
                     }
                     for (Chunk chunk : foundChunks) {
-                        MyChunkChunk myChunk = new MyChunkChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ(), plugin);
+                        MyChunkChunk myChunk = getChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
                         myChunk.claim(correctName);
-                        plugin.chunks.put(myChunk.getWorldName()+"_"+myChunk.getX()+"_"+myChunk.getZ(), myChunk);
                     }
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunksClaimed")+": "+ChatColor.WHITE+foundChunks.size());
+                    player.sendMessage(ChatColor.GOLD + Lang.get("ChunksClaimed")+": "+ChatColor.WHITE+foundChunks.size());
                 }
             }
             event.setCancelled(true);
@@ -680,8 +676,8 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             Block block = event.getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (chunk == null) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("ChunkNotOwned"));
+            if (!chunk.isClaimed()) {
+                player.sendMessage(ChatColor.RED + Lang.get("ChunkNotOwned"));
                 event.setCancelled(true);
                 breakSign(block);
                 return;
@@ -690,20 +686,19 @@ public class MyChunkListener implements Listener {
             boolean allowed =true;
             if (!owner.equalsIgnoreCase(player.getName())) {
                 if (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.unclaim.server")) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsUnclaimServer"));
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsUnclaimServer"));
                     allowed = false;
                 } else if (!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.unclaim.others")) {
-                    player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsUnclaimOther"));
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsUnclaimOther"));
                     allowed = false;
                 }
             }
             if (allowed) {
                 chunk.unclaim();
-                plugin.chunks.remove(chunk.getWorldName()+"_"+chunk.getX()+"_"+chunk.getZ());
                 if (owner.equalsIgnoreCase(player.getName())) {
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunkUnclaimed"));
+                    player.sendMessage(ChatColor.GOLD + Lang.get("ChunkUnclaimed"));
                 } else {
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunkUnclaimedFor")+" " + ChatColor.WHITE + owner + ChatColor.RED + "!");
+                    player.sendMessage(ChatColor.GOLD + Lang.get("ChunkUnclaimedFor")+" " + ChatColor.WHITE + owner + ChatColor.RED + "!");
                 }
                 if (plugin.unclaimRefund && !player.hasPermission("mychunk.free")) {
                     plugin.vault.economy.depositPlayer(player.getName(), plugin.chunkPrice);
@@ -716,17 +711,17 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             Block block = event.getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (chunk != null) {
+            if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
                 if (owner.equalsIgnoreCase(player.getName())) {
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("YouOwn"));
-                    player.sendMessage(ChatColor.GREEN + plugin.lang.get("AllowedPlayers")+": " + chunk.getAllowed());
+                    player.sendMessage(ChatColor.GOLD + Lang.get("YouOwn"));
+                    player.sendMessage(ChatColor.GREEN + Lang.get("AllowedPlayers")+": " + chunk.getAllowed());
                 } else {
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("OwnedBy")+" " + ChatColor.WHITE + owner + ChatColor.GOLD + "!");
-                    player.sendMessage(ChatColor.GREEN + plugin.lang.get("AllowedPlayers")+": " + chunk.getAllowed());
+                    player.sendMessage(ChatColor.GOLD + Lang.get("OwnedBy")+" " + ChatColor.WHITE + owner + ChatColor.GOLD + "!");
+                    player.sendMessage(ChatColor.GREEN + Lang.get("AllowedPlayers")+": " + chunk.getAllowed());
                 }
             } else {
-                player.sendMessage(ChatColor.GOLD + plugin.lang.get("ChunkIs")+" " + ChatColor.WHITE + plugin.lang.get("Unowned") + ChatColor.GOLD + "!");
+                player.sendMessage(ChatColor.GOLD + Lang.get("ChunkIs")+" " + ChatColor.WHITE + Lang.get("Unowned") + ChatColor.GOLD + "!");
             }
             event.setCancelled(true);
             breakSign(block);
@@ -735,16 +730,16 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             Block block = event.getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (plugin.lang.get("Everyone").equals(line1.toUpperCase())) {
+            if (Lang.get("Everyone").equals(line1.toUpperCase())) {
                 line1 = "*";
             }
             String line2 = event.getLine(2).toUpperCase();
-            if (chunk == null || !chunk.getOwner().equalsIgnoreCase(player.getName())) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("DoNotOwn"));
+            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
             } else if ("".equals(line1) || line1.contains(" ")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("Line2Player"));
+                player.sendMessage(ChatColor.RED + Lang.get("Line2Player"));
             } else if (line1.equalsIgnoreCase(player.getName())) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("AllowSelf"));
+                player.sendMessage(ChatColor.RED + Lang.get("AllowSelf"));
             } else {
                 if ("".equals(line2)) {
                     line2 = "*";
@@ -757,7 +752,7 @@ public class MyChunkListener implements Listener {
                         OfflinePlayer offTarget = plugin.getServer().getOfflinePlayer(line1);
                         targetName = offTarget.getName();
                         if (!offTarget.hasPlayedBefore()) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+plugin.lang.get("NotFound")+"!");
+                            player.sendMessage(ChatColor.RED + Lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+Lang.get("NotFound")+"!");
                             found = false;
                         }
                     } else {
@@ -766,7 +761,7 @@ public class MyChunkListener implements Listener {
                 }
                 String displayName = targetName;
                 if (displayName.equals("*")) {
-                    displayName = plugin.lang.get("Everyone");
+                    displayName = Lang.get("Everyone");
                 }
                 if (found && !"*".equalsIgnoreCase(line2)) {
                     String errors = "";
@@ -778,7 +773,7 @@ public class MyChunkListener implements Listener {
                             errors += thisChar;
                         }
                     }
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("PermissionsUpdated"));
+                    player.sendMessage(ChatColor.GOLD + Lang.get("PermissionsUpdated"));
                     if (!"".equals(errors)) {
                         player.sendMessage(ChatColor.RED + "Flags not found: " + errors);
                     }
@@ -789,7 +784,7 @@ public class MyChunkListener implements Listener {
                     player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
                 } else if (found && "*".equalsIgnoreCase(line2)) {
                     chunk.allow(targetName, "*");
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("PermissionsUpdated"));
+                    player.sendMessage(ChatColor.GOLD + Lang.get("PermissionsUpdated"));
                     player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags added: " + ChatColor.GREEN + line2.replaceAll(" ",""));
                     if (!"*".equals(targetName)) {
                         player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
@@ -804,14 +799,14 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             Block block = event.getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (plugin.lang.get("Everyone").equals(line1.toUpperCase())) {
+            if (Lang.get("Everyone").equals(line1.toUpperCase())) {
                 line1 = "*";
             }
             String line2 = event.getLine(2).toUpperCase();
-            if (chunk == null || !chunk.getOwner().equalsIgnoreCase(player.getName())) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("DoNotOwn"));
+            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
             } else if ("".equals(line1) || line1.contains(" ")) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("Line2Player"));
+                player.sendMessage(ChatColor.RED + Lang.get("Line2Player"));
             } else if (line1.equalsIgnoreCase(player.getName())) {
                 player.sendMessage(ChatColor.RED + "You cannot disallow yourself!");
             } else if (!"*".equals(line1) && chunk.isAllowed("*",line2)) {
@@ -828,7 +823,7 @@ public class MyChunkListener implements Listener {
                         OfflinePlayer offTarget = plugin.getServer().getOfflinePlayer(line1);
                         targetName = offTarget.getName();
                         if (!offTarget.hasPlayedBefore()) {
-                            player.sendMessage(ChatColor.RED + plugin.lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+plugin.lang.get("NotFound")+"!");
+                            player.sendMessage(ChatColor.RED + Lang.get("Player")+" " + ChatColor.WHITE + line1 + ChatColor.RED + " "+Lang.get("NotFound")+"!");
                             found = false;
                         }
                     } else {
@@ -837,7 +832,7 @@ public class MyChunkListener implements Listener {
                 }
                 String displayName = targetName;
                 if (displayName.equals("*")) {
-                    displayName = plugin.lang.get("Everyone");
+                    displayName = Lang.get("Everyone");
                 }
                 if (found && !"*".equalsIgnoreCase(line2)) {
                     String errors = "";
@@ -849,7 +844,7 @@ public class MyChunkListener implements Listener {
                             errors += thisChar;
                         }
                     }
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("PermissionsUpdated"));
+                    player.sendMessage(ChatColor.GOLD + Lang.get("PermissionsUpdated"));
                     if (!"".equals(errors)) {
                         player.sendMessage(ChatColor.RED + "Flags not found: " + errors);
                     }
@@ -860,7 +855,7 @@ public class MyChunkListener implements Listener {
                     player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
                 } else if (found && "*".equalsIgnoreCase(line2)) {
                     chunk.disallow(targetName, "*");
-                    player.sendMessage(ChatColor.GOLD + plugin.lang.get("PermissionsUpdated"));
+                    player.sendMessage(ChatColor.GOLD + Lang.get("PermissionsUpdated"));
                     player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags removed: " + ChatColor.GREEN + line2.replaceAll(" ",""));
                     if (!"*".equals(targetName)) {
                         player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
@@ -885,7 +880,7 @@ public class MyChunkListener implements Listener {
                 event.setCancelled(true);
                 breakSign(event.getBlock());
                 allowed = false;
-            } else if (chunk == null || !chunk.getOwner().equalsIgnoreCase(player.getName())) {
+            } else if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
                 player.sendMessage(ChatColor.RED + "You can't sell this chunk, you don't own it!");
                 event.setCancelled(true);
                 breakSign(event.getBlock());
@@ -928,8 +923,8 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             MyChunkChunk chunk = getChunk(event.getBlock());
             boolean allowed = true;
-            if (chunk == null || !chunk.getOwner().equalsIgnoreCase(player.getName())) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("DoNotOwn"));
+            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
                 event.setCancelled(true);
                 breakSign(event.getBlock());
                 allowed = false;
@@ -948,8 +943,8 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             MyChunkChunk chunk = getChunk(event.getBlock());
             boolean allowed = true;
-            if (chunk == null || !chunk.getOwner().equalsIgnoreCase(player.getName())) {
-                player.sendMessage(ChatColor.RED + plugin.lang.get("DoNotOwn"));
+            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
                 event.setCancelled(true);
                 breakSign(event.getBlock());
                 allowed = false;
@@ -976,19 +971,19 @@ public class MyChunkListener implements Listener {
                 }
                 breakSign(event.getBlock());
             }
-        }
-        if (!event.isCancelled()) {
+        } else {
             Block block = event.getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (chunk != null) {
+            Player player = event.getPlayer();
+            if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
-                Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !player.hasPermission("mychunk.override")) {
-                    if (!owner.equalsIgnoreCase("server") ^ !player.hasPermission("mychunk.server.build")) {
-                        event.setCancelled(true);
-                        breakSign(block);
-                    }
+                    event.setCancelled(true);
+                    breakSign(block);
                 }
+            } else if (plugin.protectUnclaimed && !player.hasPermission("mychunk.override")) {
+                event.setCancelled(true);
+                breakSign(block);
             }
         }
     }
@@ -999,8 +994,8 @@ public class MyChunkListener implements Listener {
             return;
         Player player = event.getPlayer();
         MyChunkChunk chunk = getChunk(event.getEntity().getLocation().getBlock());
-        if (!player.hasPermission("mychunk.override") && (chunk != null && !player.getName().equals(chunk.getOwner()) && !chunk.isAllowed(player.getName(), "B")) || plugin.protectUnclaimed) {
-            player.sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBuild"));
+        if (!player.hasPermission("mychunk.override") && (!player.getName().equals(chunk.getOwner()) && !chunk.isAllowed(player.getName(), "B")) || plugin.protectUnclaimed) {
+            player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
             event.setCancelled(true);
         }
     }
@@ -1011,10 +1006,10 @@ public class MyChunkListener implements Listener {
             return;
         Entity remover = event.getRemover();
         MyChunkChunk chunk = getChunk(event.getEntity().getLocation().getBlock());
-        if (chunk != null || plugin.protectUnclaimed) {
+        if (chunk.isClaimed() || plugin.protectUnclaimed) {
             if (remover instanceof Player) {
                 if (!((Player)remover).hasPermission("mychunk.override") && (chunk != null && !((Player)remover).getName().equals(chunk.getOwner()) && !chunk.isAllowed(((Player)remover).getName(), "B")) || plugin.protectUnclaimed) {
-                    ((Player)remover).sendMessage(ChatColor.RED + plugin.lang.get("NoPermsBreak"));
+                    ((Player)remover).sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
                     event.setCancelled(true);
                 }
             } else {
@@ -1029,14 +1024,14 @@ public class MyChunkListener implements Listener {
             return;
         MyChunkChunk fromChunk = getChunk(event.getFrom().getBlock());
         MyChunkChunk toChunk = getChunk(event.getTo().getBlock());
-        if (toChunk != null && (fromChunk == null || !fromChunk.getOwner().equals(toChunk.getOwner()))) {
+        if (!toChunk.getOwner().equalsIgnoreCase(fromChunk.getOwner())) {
             if (toChunk.getOwner().equalsIgnoreCase("server")) {
-                event.getPlayer().sendMessage(ChatColor.LIGHT_PURPLE + "~" + plugin.lang.get("Server"));
+                event.getPlayer().sendMessage(ChatColor.LIGHT_PURPLE + "~" + Lang.get("Server"));
+            } else if (!toChunk.isClaimed()) {
+                event.getPlayer().sendMessage(ChatColor.GRAY + "~" + Lang.get("Unowned"));
             } else {
                 event.getPlayer().sendMessage(ChatColor.GOLD + "~" + toChunk.getOwner());
             }
-        } else  if (toChunk == null && fromChunk != null) {
-            event.getPlayer().sendMessage(ChatColor.GRAY + "~"+plugin.lang.get("Unowned"));
         }
     }
     
@@ -1047,7 +1042,7 @@ public class MyChunkListener implements Listener {
         if (event.getBlock().getChunk() != event.getBlock().getRelative(event.getDirection()).getChunk()) {
             MyChunkChunk chunk1 = getChunk(event.getBlock());
             MyChunkChunk chunk2 = getChunk(event.getBlock().getRelative(event.getDirection()));
-            if (chunk2 != null && (chunk1 == null || !chunk1.getOwner().equals(chunk2.getOwner()))) {
+            if (chunk2.isClaimed() && !chunk1.getOwner().equals(chunk2.getOwner())) {
                 // Pushing into an owned chunk with a different owner
                 event.setCancelled(true);
                 return;
@@ -1060,7 +1055,7 @@ public class MyChunkListener implements Listener {
                 if (block.getChunk() != block.getRelative(event.getDirection()).getChunk()) {
                     MyChunkChunk chunk1 = getChunk(block);
                     MyChunkChunk chunk2 = getChunk(block.getRelative(event.getDirection()));
-                    if (chunk2 != null && (chunk1 == null || !chunk1.getOwner().equals(chunk2.getOwner()))) {
+                    if (chunk2.isClaimed() && !chunk1.getOwner().equals(chunk2.getOwner())) {
                         // Pushing into an owned chunk with a different owner
                         event.setCancelled(true);
                     }
@@ -1078,7 +1073,7 @@ public class MyChunkListener implements Listener {
                 if (event.getBlock().getChunk() != event.getRetractLocation().getBlock().getChunk()) {
                     MyChunkChunk chunk1 = getChunk(event.getBlock());
                     MyChunkChunk chunk2 = getChunk(event.getRetractLocation().getBlock());
-                    if (chunk2 != null && (chunk1 == null || !chunk1.getOwner().equals(chunk2.getOwner()))) {
+                    if (chunk2.isClaimed()&& !chunk1.getOwner().equals(chunk2.getOwner())) {
                         // Pulling out of an owned chunk with a different owner
                         event.setCancelled(true);
                         event.getBlock().setType(Material.PISTON_STICKY_BASE);
@@ -1126,70 +1121,17 @@ public class MyChunkListener implements Listener {
     }
     
     private void refreshOwnership(String playerName) {
-        for (MyChunkChunk chunk : plugin.chunks.values()) {
-            if (chunk.getOwner().equalsIgnoreCase(playerName)) {
-                long now = new Date().getTime() / 1000;
-                chunk.setLastActive(now);
-                plugin.chunkStore.set(chunk.getWorldName() + "_" + chunk.getX() + "_"+ chunk.getZ() + ".lastActive", now);
-            }
-        }
-        plugin.saveChunkStore();
+        plugin.chunkDb.query("UPDATE MyChunks SET lastActive = " + (new Date().getTime() / 1000) + " WHERE owner = '"+playerName+"'");
     }
     
     private MyChunkChunk getChunk(Block block) {
-        MyChunkChunk chunk = plugin.chunks.get(block.getWorld().getName()+"_"+block.getChunk().getX()+"_"+block.getChunk().getZ());
+        MyChunkChunk chunk = new MyChunkChunk(block, plugin);
         return chunk;
     }
     
     private MyChunkChunk getChunk(String world, int x, int z) {
-        MyChunkChunk chunk = plugin.chunks.get(world+"_"+x+"_"+z);
+        MyChunkChunk chunk = new MyChunkChunk(world,x,z,plugin);
         return chunk;
-    }
-    
-    private boolean isForSale(MyChunkChunk chunk) {
-        if(chunk == null) return false;
-        else return chunk.isForSale();
-    }
-    
-    private boolean hasNeighbours(Chunk chunk) {
-        MyChunkChunk chunkX1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() + 1)+"_"+chunk.getZ());
-        MyChunkChunk chunkX2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() - 1)+"_"+chunk.getZ());
-        MyChunkChunk chunkZ1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()+1));
-        MyChunkChunk chunkZ2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()-1));
-        if (chunkX1 != null || chunkX2 != null || chunkZ1 != null || chunkZ2 != null) {
-            return true;
-        }
-        return false;
-    }
-    
-    private String[] getNeighbours(Chunk chunk) {
-        Set<String> chunks = new HashSet<String>();
-        MyChunkChunk chunkX1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() + 1)+"_"+chunk.getZ());
-        if (chunkX1 != null)chunks.add(chunkX1.getOwner());
-        MyChunkChunk chunkX2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+(chunk.getX() - 1)+"_"+chunk.getZ());
-        if (chunkX2 != null)chunks.add(chunkX2.getOwner());
-        MyChunkChunk chunkZ1 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()+1));
-        if (chunkZ1 != null)chunks.add(chunkZ1.getOwner());
-        MyChunkChunk chunkZ2 = plugin.chunks.get(chunk.getWorld().getName()+"_"+chunk.getX()+"_"+(chunk.getZ()-1));
-        if (chunkZ2 != null)chunks.add(chunkZ2.getOwner());
-        String[] neighbours = chunks.toArray(new String[chunks.size()]);
-        return neighbours;
-    }
-    
-    private double getClaimPrice(MyChunkChunk chunk) {
-        if (chunk == null) return plugin.chunkPrice;
-        else return chunk.getClaimPrice();
-    }
-    
-    private double getOverbuyPrice(MyChunkChunk chunk) {
-        if (chunk == null) {
-            double price = plugin.chunkPrice;
-            if (plugin.allowOverbuy) {
-                price += plugin.overbuyPrice;
-            }
-            return price;
-        }
-        else return chunk.getOverbuyPrice();
     }
     
 }
