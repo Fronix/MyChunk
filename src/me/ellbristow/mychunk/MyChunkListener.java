@@ -36,8 +36,7 @@ public class MyChunkListener implements Listener {
             Collection<Block> saveBanks = new HashSet<Block>();
             for (Iterator<Block> it = blocks.iterator(); it.hasNext();) {
                 Block block = it.next();
-                MyChunkChunk chunk = getChunk(block);
-                if (chunk.isClaimed() || plugin.protectUnclaimed) {
+                if (isClaimed(block.getChunk()) || plugin.protectUnclaimed) {
                     saveBanks.add(block);
                 }
                 index++;
@@ -101,27 +100,38 @@ public class MyChunkListener implements Listener {
     public void onBlockIgnite (BlockIgniteEvent event) {
         if (event.isCancelled())
             return;
-        MyChunkChunk chunk = getChunk(event.getBlock());
-        if (chunk.isClaimed() || plugin.protectUnclaimed) {
-            if (chunk.isClaimed()) {
-                String owner = chunk.getOwner();
-                if (event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
-                    Player player = event.getPlayer();
-                    if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "I")) {
-                        if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.ignite"))) {
-                            player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
-                            event.setCancelled(true);
-                        }
-                    }
-                } else if (event.getCause() == IgniteCause.LAVA || event.getCause() == IgniteCause.SPREAD) {
-                    event.setCancelled(true);
-                }
-            } else if (!event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+        String owner = getOwner(event.getBlock().getChunk());
+        if (!owner.equalsIgnoreCase("Unowned")) {
+            if (event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+                MyChunkChunk chunk = getChunk(event.getBlock());
                 Player player = event.getPlayer();
-                if (player != null && !player.hasPermission("mychunk.override")) {
-                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
-                    event.setCancelled(true);
+                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "I")) {
+                    if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.ignite"))) {
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
+                        event.setCancelled(true);
+                    }
                 }
+            } else if (event.getCause() == IgniteCause.LAVA || event.getCause() == IgniteCause.SPREAD) {
+                event.setCancelled(true);
+            }
+        } else if (plugin.protectUnclaimed && !event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+            Player player = event.getPlayer();
+            if (player != null && !player.hasPermission("mychunk.override")) {
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
+                event.setCancelled(true);
+            }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onBlockFromTo (BlockFromToEvent event) {
+        Block block = event.getBlock();
+        Block toBlock = event.getToBlock();
+        if (block.getChunk() != toBlock.getChunk()) {
+            String toOwner = getOwner(toBlock.getChunk());
+            String fromOwner = getOwner(block.getChunk());
+            if (!toOwner.equalsIgnoreCase(fromOwner)) {
+                event.setCancelled(true);
             }
         }
     }
@@ -131,8 +141,7 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         if (event.getBlock().getTypeId() == 64 && event.getEntityType().equals(EntityType.ZOMBIE)) {
-            MyChunkChunk chunk = getChunk(event.getBlock());
-            if (chunk.isClaimed() || plugin.protectUnclaimed) {
+            if (isClaimed(event.getBlock().getChunk()) || plugin.protectUnclaimed) {
                 event.setCancelled(true);
             }
         }
@@ -189,8 +198,8 @@ public class MyChunkListener implements Listener {
             return;
         if (event.getAction().equals(Action.LEFT_CLICK_BLOCK) || event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
             Block block = event.getClickedBlock();
+            if (!isClaimed(block.getChunk())) return;
             MyChunkChunk chunk = getChunk(block);
-            if (!chunk.isClaimed()) return;
             Player player = event.getPlayer();
             String owner = chunk.getOwner();
             if (block.getTypeId() == 64 || block.getTypeId() == 96 || block.getTypeId() == 107) {
@@ -252,8 +261,8 @@ public class MyChunkListener implements Listener {
         } else if (event.getAction().equals(Action.PHYSICAL)) {
             Player player = event.getPlayer();
             Block block = player.getLocation().getBlock();
+            if (!isClaimed(block.getChunk())) return;
             MyChunkChunk chunk = getChunk(block);
-            if (!chunk.isClaimed()) return;
             String owner = chunk.getOwner();
             if ((block.getType() == Material.CROPS || block.getType() ==  Material.SOIL || block.getType() ==  Material.CARROT || block.getType() ==  Material.POTATO || (block.getType() ==  Material.AIR && block.getRelative(BlockFace.DOWN).getType().equals(Material.SOIL))) && chunk.isClaimed()) {
                 event.setCancelled(true);
@@ -268,8 +277,7 @@ public class MyChunkListener implements Listener {
     @EventHandler (priority = EventPriority.NORMAL)
     public void onEntityInteract(EntityInteractEvent event) {
         Block block = event.getBlock();
-        MyChunkChunk chunk = getChunk(block);
-        if ((block.getType() == Material.CROPS || block.getType() ==  Material.SOIL || block.getType() ==  Material.CARROT || block.getType() ==  Material.POTATO || (block.getType() ==  Material.AIR && block.getRelative(BlockFace.DOWN).getType().equals(Material.SOIL))) && chunk.isClaimed()) {
+        if ((block.getType() == Material.CROPS || block.getType() ==  Material.SOIL || block.getType() ==  Material.CARROT || block.getType() ==  Material.POTATO || (block.getType() ==  Material.AIR && block.getRelative(BlockFace.DOWN).getType().equals(Material.SOIL))) && isClaimed(block.getChunk())) {
             event.setCancelled(true);
         }
     }
@@ -333,7 +341,7 @@ public class MyChunkListener implements Listener {
     }
     
     @EventHandler (priority = EventPriority.NORMAL)
-    public void onPlayerPVP (EntityDamageByEntityEvent event) {
+    public void onPlayerDamage (EntityDamageByEntityEvent event) {
         if (event.isCancelled())
             return;
         Entity entity = event.getEntity();
@@ -367,15 +375,15 @@ public class MyChunkListener implements Listener {
     @EventHandler (priority = EventPriority.NORMAL)
     public void onPotionSplash(PotionSplashEvent event) {
         ThrownPotion potion = event.getPotion();
-        MyChunkChunk chunk = getChunk(potion.getLocation().getBlock());
-        if (chunk.isClaimed()) {
-            if (chunk.getOwner().equalsIgnoreCase("Server")) {
+        String owner = getOwner(potion.getLocation().getChunk());
+        if (!owner.equalsIgnoreCase("Unowned")) {
+            if (owner.equalsIgnoreCase("Server")) {
                 event.setCancelled(true);
             } else {
                 LivingEntity shooter = potion.getShooter();
                 if (shooter instanceof Player) {
                     Player player = (Player)shooter;
-                    if (chunk.getOwner().equalsIgnoreCase(player.getName())) {
+                    if (owner.equalsIgnoreCase(player.getName())) {
                         event.setCancelled(true);
                     }
                 } else {
@@ -1033,15 +1041,43 @@ public class MyChunkListener implements Listener {
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         if (event.isCancelled())
             return;
-        MyChunkChunk fromChunk = getChunk(event.getFrom().getBlock());
-        MyChunkChunk toChunk = getChunk(event.getTo().getBlock());
-        if (!toChunk.getOwner().equalsIgnoreCase(fromChunk.getOwner())) {
-            if (toChunk.getOwner().equalsIgnoreCase("server")) {
-                event.getPlayer().sendMessage(ChatColor.LIGHT_PURPLE + "~" + Lang.get("Server"));
-            } else if (!toChunk.isClaimed()) {
-                event.getPlayer().sendMessage(ChatColor.GRAY + "~" + Lang.get("Unowned"));
-            } else {
-                event.getPlayer().sendMessage(ChatColor.GOLD + "~" + toChunk.getOwner());
+        Location fromLoc = event.getFrom();
+        Location toLoc = event.getTo();
+        if (fromLoc.getChunk() != toLoc.getChunk()) {
+            MyChunkChunk fromChunk = getChunk(fromLoc.getBlock());
+            MyChunkChunk toChunk = getChunk(toLoc.getBlock());
+            Player player = event.getPlayer();
+            if (!fromChunk.getOwner().equalsIgnoreCase(toChunk.getOwner())) {
+                String forSale = "";
+                if (toChunk.isForSale()) {
+                    forSale = ChatColor.YELLOW + " ["+Lang.get("ChunkForSale");
+                    if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
+                        if (plugin.ownedChunkCount(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy) {
+                            forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                        } else if (plugin.allowOverbuy && plugin.ownedChunkCount(player.getName()) >= plugin.maxChunks) {
+                            forSale += ": " + plugin.vault.economy.format(toChunk.getOverbuyPrice());
+                        }
+                    }
+                    forSale += "]";
+                }
+                if (!toChunk.isClaimed()) {
+                    player.sendMessage(ChatColor.GRAY + "~"+Lang.get("Unowned"));
+                } else if (toChunk.getOwner().equalsIgnoreCase("server")) {
+                    player.sendMessage(ChatColor.LIGHT_PURPLE + "~"+Lang.get("Server") + forSale);
+                } else {
+                    player.sendMessage(ChatColor.GOLD + "~" + toChunk.getOwner() + forSale);
+                }
+            } else if (toChunk.isForSale()) {
+                String forSale = ChatColor.YELLOW + "["+Lang.get("ChunkForSale");
+                if (plugin.foundEconomy && toChunk.getClaimPrice() != 0) {
+                    if (plugin.ownedChunkCount(player.getName()) < plugin.maxChunks || !plugin.allowOverbuy || (plugin.allowOverbuy && player.hasPermission("mychunk.free"))) {
+                        forSale += ": " + plugin.vault.economy.format(toChunk.getClaimPrice());
+                    } else if (plugin.allowOverbuy && plugin.ownedChunkCount(player.getName()) >= plugin.maxChunks) {
+                        forSale += ": " + plugin.vault.economy.format(toChunk.getOverbuyPrice());
+                    }
+                }
+                forSale += "]";
+                player.sendMessage(forSale);
             }
         }
     }
@@ -1051,9 +1087,9 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         if (event.getBlock().getChunk() != event.getBlock().getRelative(event.getDirection()).getChunk()) {
-            MyChunkChunk chunk1 = getChunk(event.getBlock());
-            MyChunkChunk chunk2 = getChunk(event.getBlock().getRelative(event.getDirection()));
-            if (chunk2.isClaimed() && !chunk1.getOwner().equals(chunk2.getOwner())) {
+            String chunk1 = getOwner(event.getBlock().getChunk());
+            String chunk2 = getOwner(event.getBlock().getRelative(event.getDirection()).getChunk());
+            if (!chunk2.equalsIgnoreCase("Unowned") && !chunk1.equalsIgnoreCase(chunk2)) {
                 // Pushing into an owned chunk with a different owner
                 event.setCancelled(true);
                 return;
@@ -1064,9 +1100,9 @@ public class MyChunkListener implements Listener {
             List<Block> blocks = event.getBlocks();
             for (Block block : blocks) {
                 if (block.getChunk() != block.getRelative(event.getDirection()).getChunk()) {
-                    MyChunkChunk chunk1 = getChunk(block);
-                    MyChunkChunk chunk2 = getChunk(block.getRelative(event.getDirection()));
-                    if (chunk2.isClaimed() && !chunk1.getOwner().equals(chunk2.getOwner())) {
+                    String chunk1 = getOwner(block.getChunk());
+                    String chunk2 = getOwner(block.getRelative(event.getDirection()).getChunk());
+                    if (!chunk2.equalsIgnoreCase("Unowned") && !chunk1.equalsIgnoreCase(chunk2)) {
                         // Pushing into an owned chunk with a different owner
                         event.setCancelled(true);
                     }
@@ -1082,9 +1118,9 @@ public class MyChunkListener implements Listener {
         if (!event.getDirection().equals(BlockFace.UP) && !event.getDirection().equals(BlockFace.DOWN)) {
             if (event.isSticky()) {
                 if (event.getBlock().getChunk() != event.getRetractLocation().getBlock().getChunk()) {
-                    MyChunkChunk chunk1 = getChunk(event.getBlock());
-                    MyChunkChunk chunk2 = getChunk(event.getRetractLocation().getBlock());
-                    if (chunk2.isClaimed()&& !chunk1.getOwner().equals(chunk2.getOwner())) {
+                    String chunk1 = getOwner(event.getBlock().getChunk());
+                    String chunk2 = getOwner(event.getRetractLocation().getBlock().getChunk());
+                    if (!chunk2.equalsIgnoreCase("Unowned") && !chunk1.equalsIgnoreCase(chunk2)) {
                         // Pulling out of an owned chunk with a different owner
                         event.setCancelled(true);
                         event.getBlock().setType(Material.PISTON_STICKY_BASE);
@@ -1143,6 +1179,22 @@ public class MyChunkListener implements Listener {
     private MyChunkChunk getChunk(String world, int x, int z) {
         MyChunkChunk chunk = new MyChunkChunk(world,x,z,plugin);
         return chunk;
+    }
+    
+    private boolean isClaimed(Chunk chunk) {
+        if (getOwner(chunk).equalsIgnoreCase("Unowned")) {
+            return false;
+        }
+        return true;
+    }
+    
+    private String getOwner(Chunk chunk) {
+        HashMap<Integer, HashMap<String, Object>> results = plugin.chunkDb.select("owner", "MyChunks", "world = '"+chunk.getWorld().getName()+"' AND x = "+chunk.getX()+" AND z = " + chunk.getZ(), "", "");
+        if (!results.isEmpty()) {
+            HashMap<String, Object> result = results.get(0);
+            return (String)result.get("owner");
+        }
+        return "Unowned";
     }
     
 }
