@@ -111,10 +111,10 @@ public class MyChunkListener implements Listener {
                         event.setCancelled(true);
                     }
                 }
-            } else if (event.getCause() == IgniteCause.LAVA || event.getCause() == IgniteCause.SPREAD) {
+            } else if (event.getCause().equals(IgniteCause.LAVA) || event.getCause().equals(IgniteCause.SPREAD)) {
                 event.setCancelled(true);
             }
-        } else if (plugin.protectUnclaimed && !event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+        } else if (plugin.protectUnclaimed && event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
             Player player = event.getPlayer();
             if (player != null && !player.hasPermission("mychunk.override")) {
                 player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
@@ -133,6 +133,27 @@ public class MyChunkListener implements Listener {
             if (!toOwner.equalsIgnoreCase(fromOwner)) {
                 event.setCancelled(true);
             }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onBlockBurn (BlockBurnEvent event) {
+        Block block = event.getBlock();
+        String toOwner = getOwner(block.getChunk());
+        if (!toOwner.equalsIgnoreCase("Unowned")) {
+            event.setCancelled(true);
+            if (block.getRelative(BlockFace.UP).getType().equals(Material.FIRE)) {
+                block.getRelative(BlockFace.UP).setType(Material.AIR);
+            }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onBlockSpread (BlockSpreadEvent event) {
+        Block toBlock = event.getBlock();
+        String toOwner = getOwner(toBlock.getChunk());
+        if (!toOwner.equalsIgnoreCase("Unowned")) {
+            event.setCancelled(true);
         }
     }
     
@@ -202,7 +223,14 @@ public class MyChunkListener implements Listener {
             MyChunkChunk chunk = getChunk(block);
             Player player = event.getPlayer();
             String owner = chunk.getOwner();
-            if (block.getTypeId() == 64 || block.getTypeId() == 96 || block.getTypeId() == 107) {
+            if (block.getType().equals(Material.NETHERRACK) && block.getRelative(BlockFace.UP) != null && block.getRelative(BlockFace.UP).getType().equals(Material.FIRE)) {
+                if (!owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "B")) {
+                    if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.doors"))) {
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
+                        event.setCancelled(true);
+                    }
+                }
+            } else if (block.getTypeId() == 64 || block.getTypeId() == 96 || block.getTypeId() == 107) {
                 if (!owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "O")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.doors"))) {
                         player.sendMessage(ChatColor.RED + Lang.get("NoPermsDoor"));
