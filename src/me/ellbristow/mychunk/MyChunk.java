@@ -487,20 +487,22 @@ public class MyChunk extends JavaPlugin {
             Set<String> keys = chunkStore.getKeys(false);
             String values = "";
             for (String key : keys) {
-                int split = key.lastIndexOf("_", key.lastIndexOf("_") - 1);
-                String world = key.substring(0, split);
-                String[] elements = key.substring(split + 1).split("_");
-                int x = Integer.parseInt(elements[0]);
-                int z = Integer.parseInt(elements[1]);
-                String owner = chunkStore.getString(key+".owner");
-                String allowed = chunkStore.getString(key+".allowed","");
-                double salePrice = chunkStore.getDouble(key+".forsale",0);
-                boolean allowMobs = chunkStore.getBoolean(key+".allowmobs",false);
-                long lastActive = chunkStore.getLong(key+".lastActive",0);
-                if (!values.equals("")) {
-                    values += ",";
+                if (!key.equalsIgnoreCase("TotalOwned")) {
+                    int split = key.lastIndexOf("_", key.lastIndexOf("_") - 1);
+                    String world = key.substring(0, split);
+                    String[] elements = key.substring(split + 1).split("_");
+                    int x = Integer.parseInt(elements[0]);
+                    int z = Integer.parseInt(elements[1]);
+                    String owner = chunkStore.getString(key+".owner");
+                    String allowed = chunkStore.getString(key+".allowed","");
+                    double salePrice = chunkStore.getDouble(key+".forsale",0);
+                    boolean allowMobs = chunkStore.getBoolean(key+".allowmobs",false);
+                    long lastActive = chunkStore.getLong(key+".lastActive",0);
+                    if (!values.equals("")) {
+                        values += ",";
+                    }
+                    chunkDb.query("INSERT OR REPLACE INTO MyChunks (world,x,z,owner,allowed,salePrice,allowMobs,lastActive) VALUES ('"+world+"',"+x+","+z+",'"+owner+"','"+allowed+"',"+salePrice+","+(allowMobs?"1":"0")+","+lastActive+")");
                 }
-                chunkDb.query("INSERT OR REPLACE INTO MyChunks (world,x,z,owner,allowed,salePrice,allowMobs,lastActive) VALUES ('"+world+"',"+x+","+z+",'"+owner+"','"+allowed+"',"+salePrice+","+(allowMobs?"1":"0")+","+lastActive+")");
             }
             getLogger().info("YML > SQLite Conversion Complete!");
         }

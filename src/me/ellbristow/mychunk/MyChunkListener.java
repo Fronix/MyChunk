@@ -255,11 +255,22 @@ public class MyChunkListener implements Listener {
             MyChunkChunk chunk = getChunk(block);
             if (!chunk.isClaimed()) return;
             String owner = chunk.getOwner();
-            if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
+            if ((block.getType() == Material.CROPS || block.getType() ==  Material.SOIL || block.getType() ==  Material.CARROT || block.getType() ==  Material.POTATO || (block.getType() ==  Material.AIR && block.getRelative(BlockFace.DOWN).getType().equals(Material.SOIL))) && chunk.isClaimed()) {
+                event.setCancelled(true);
+            } else if (chunk.isClaimed() && !owner.equals(player.getName()) && !chunk.isAllowed(player.getName(), "U")) {
                 if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.use"))) {
                     event.setCancelled(true);
                 }
             }
+        }
+    }
+    
+    @EventHandler (priority = EventPriority.NORMAL)
+    public void onEntityInteract(EntityInteractEvent event) {
+        Block block = event.getBlock();
+        MyChunkChunk chunk = getChunk(block);
+        if ((block.getType() == Material.CROPS || block.getType() ==  Material.SOIL || block.getType() ==  Material.CARROT || block.getType() ==  Material.POTATO || (block.getType() ==  Material.AIR && block.getRelative(BlockFace.DOWN).getType().equals(Material.SOIL))) && chunk.isClaimed()) {
+            event.setCancelled(true);
         }
     }
     
