@@ -35,14 +35,6 @@ public class SQLiteBridge {
             if (conn == null || conn.isClosed()) {
             	Class.forName("org.sqlite.JDBC");
                 conn = DriverManager.getConnection("jdbc:sqlite:" + sqlFile.getAbsolutePath());
-                plugin.getServer().getScheduler().scheduleAsyncRepeatingTask(plugin, new Runnable() {
-
-                    @Override
-                    public void run() {
-                        close();
-                    }
-
-                }, 3600L, 3600L);
             }
             return conn;
         } catch (Exception e) {
@@ -66,10 +58,13 @@ public class SQLiteBridge {
         try {
             dbm = this.open().getMetaData();
             ResultSet tables = dbm.getTables(null, null, tableName, null);
-            if (tables.next())
+            if (tables.next()) {
+                close();
                 return true;
-            else
+            } else {
+                close();
                 return false;
+            }
         } catch (Exception e) {
             plugin.getLogger().severe(e.getMessage());
             return false;
@@ -93,6 +88,7 @@ public class SQLiteBridge {
         } catch (Exception e) {
             plugin.getLogger().severe(e.getMessage());
         }
+        close();
         return true;
     }
     
@@ -102,6 +98,7 @@ public class SQLiteBridge {
                 open();
             statement = conn.createStatement();
             ResultSet results = statement.executeQuery(query);
+            close();
             return results;
         } catch (Exception e) {
             if (!e.getMessage().contains("not return ResultSet") || (e.getMessage().contains("not return ResultSet") && query.startsWith("SELECT"))) {
@@ -153,14 +150,18 @@ public class SQLiteBridge {
                     numRows++;
                 }
                 results.close();
+                close();
                 return rows;
             } else {
+                results.close();
+                close();
                 return null;
             }
         } catch (Exception e) {
             plugin.getLogger().severe(e.getMessage());
             e.printStackTrace();
         }
+        close();
         return null;
     }
     
