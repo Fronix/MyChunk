@@ -36,8 +36,14 @@ public class MyChunkListener implements Listener {
             Collection<Block> saveBanks = new HashSet<Block>();
             for (Iterator<Block> it = blocks.iterator(); it.hasNext();) {
                 Block block = it.next();
-                if (isClaimed(block.getChunk()) || plugin.protectUnclaimed) {
+                if (isClaimed(block.getChunk())) {
                     saveBanks.add(block);
+                } else if (plugin.protectUnclaimed) {
+                    if (!(event.getEntity() instanceof TNTPrimed) || !plugin.unclaimedTNT) {
+                        saveBanks.add(block);
+                    } else if (event.getEntity() instanceof TNTPrimed && plugin.unclaimedTNT) {
+                        saveBanks.add(block);
+                    }
                 }
                 index++;
             }

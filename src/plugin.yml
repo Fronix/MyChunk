@@ -76,6 +76,7 @@ permissions:
       mychunk.commands.toggle.resales: true
       mychunk.commands.toggle.neighbours: true
       mychunk.commands.toggle.unclaimed: true
+      mychunk.commands.toggle.tnt: true
       mychunk.commands.toggle.expiry: true
       mychunk.commands.toggle.allownether: true
       mychunk.commands.toggle.allowend: true
@@ -93,6 +94,9 @@ permissions:
     default: op
   mychunk.commands.toggle.unclaimed:
     description: Access to command /mychunk toggle unclaimed
+    default: op
+  mychunk.commands.toggle.tnt:
+    description: Access to command /mychunk toggle tnt
     default: op
   mychunk.commands.toggle.expiry:
     description: Access to command /mychunk toggle expiry

@@ -26,6 +26,7 @@ public class MyChunk extends JavaPlugin {
     protected boolean allowNeighbours = false;
     protected boolean allowOverbuy = false;
     protected boolean protectUnclaimed = false;
+    protected boolean unclaimedTNT = false;
     protected boolean useClaimExpiry = false;
     protected boolean allowNether = true;
     protected boolean allowEnd = true;
@@ -307,6 +308,27 @@ public class MyChunk extends JavaPlugin {
                         sender.sendMessage(ChatColor.RED + Lang.get("NoPermsCommand"));
                         return false;
                     }
+                } else if (args[1].equalsIgnoreCase("tnt")) {
+                    if (sender.hasPermission("mychunk.commands.toggle.tnt")) {
+                        if (protectUnclaimed) {
+                            if (unclaimedTNT) {
+                                unclaimedTNT = false;
+                                sender.sendMessage(ChatColor.GOLD + "Unclaimed chunks are now "+ChatColor.RED+"NOT"+ChatColor.GOLD+" protected from TNT");
+                            } else {
+                                unclaimedTNT = true;
+                                sender.sendMessage(ChatColor.GOLD + "Unclaimed chunks are now "+ChatColor.GREEN+"protected from TNT");
+                            }
+                            config.set("prevent_tnt_in_unclaimed", unclaimedTNT);
+                            saveConfig();
+                            return true;
+                        } else {
+                            sender.sendMessage(ChatColor.RED + "Protect Unclaimed must be enabled to toggle TNT!");
+                            return true;
+                        }
+                    } else {
+                        sender.sendMessage(ChatColor.RED + Lang.get("NoPermsCommand"));
+                        return false;
+                    }
                 } else if (args[1].equalsIgnoreCase("expiry")) {
                     if (sender.hasPermission("mychunk.commands.toggle.expiry")) {
                         if (useClaimExpiry) {
@@ -520,6 +542,8 @@ public class MyChunk extends JavaPlugin {
         config.set("allow_neighbours", allowNeighbours);
         protectUnclaimed = config.getBoolean("protect_unclaimed", false);
         config.set("protect_unclaimed", protectUnclaimed);
+        unclaimedTNT = config.getBoolean("prevent_tnt_in_unclaimed", true);
+        config.set("prevent_tnt_in_unclaimed", unclaimedTNT);
         useClaimExpiry = config.getBoolean("useClaimExpiry", false);
         config.set("useClaimExpiry", useClaimExpiry);
         claimExpiryDays = config.getInt("claimExpiresAfter", 7);
