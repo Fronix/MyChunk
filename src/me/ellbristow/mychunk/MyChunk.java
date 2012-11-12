@@ -544,7 +544,7 @@ public class MyChunk extends JavaPlugin {
                 allowOverbuy = config.getBoolean("allow_overbuy", false);
                 config.set("allow_overbuy", allowOverbuy);
                 overbuyPrice = config.getDouble("overbuy_price", 0.00);
-                config.set("overbuyPrice", overbuyPrice);
+                config.set("overbuy_price", overbuyPrice);
                 overbuyP2P = config.getBoolean("charge_overbuy_on_resales", true);
                 config.set("charge_overbuy_on_resales", overbuyP2P);
             } else if (!reload) {
