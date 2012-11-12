@@ -55,9 +55,9 @@ public class MyChunkListener implements Listener {
         Block block = event.getBlock();
         MyChunkChunk chunk = getChunk(block);
         if (chunk.isClaimed() || plugin.protectUnclaimed) {
-            if (chunk.isClaimed()) {
+            if (chunk.isClaimed() && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                 String owner = chunk.getOwner();
-                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
+                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
                         player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
                         if (block.getTypeId() != 63 && block.getTypeId() != 68) {
@@ -81,9 +81,9 @@ public class MyChunkListener implements Listener {
         MyChunkChunk chunk = getChunk(event.getBlock());
         if (chunk.isClaimed() || plugin.protectUnclaimed) {
             Player player = event.getPlayer();
-            if (chunk.isClaimed()) {
+            if (chunk.isClaimed() && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
                 String owner = chunk.getOwner();
-                if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
+                if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
                         player.sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
                         event.setCancelled(true);
