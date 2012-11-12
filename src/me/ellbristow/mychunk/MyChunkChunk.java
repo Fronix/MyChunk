@@ -86,7 +86,7 @@ public class MyChunkChunk {
             if (!owner.equalsIgnoreCase("Server")){
                 if (lastActive == 0) {
                     lastActive = new Date().getTime() / 1000;
-                    plugin.chunkDb.query("UPDATE MyChunks SET lastActive = " + lastActive + " WHERE world = '"+chunkWorld+" AND x = " + chunkX + " AND z = " + chunkZ);
+                    plugin.chunkDb.query("UPDATE MyChunks SET lastActive = " + lastActive + " WHERE world = '"+chunkWorld+"' AND x = " + chunkX + " AND z = " + chunkZ);
                 }
                 if (plugin.useClaimExpiry) {
                     if (lastActive < new Date().getTime() / 1000 - (plugin.claimExpiryDays * 60 * 60 * 24)) {
