@@ -171,6 +171,7 @@ permissions:
       mychunk.server.ignite: true
       mychunk.server.use: true
       mychunk.server.special: true
+      mychunk.server.signs: true
   mychunk.server.build:
     description: Can build in server owned chunks
     default: op
@@ -191,6 +192,9 @@ permissions:
     default: op
   mychunk.server.special:
     description: Can access furnaces, dispensers and brewing stands in server owned chunks
+    default: op
+  mychunk.server.signs:
+    description: Can use [Allow], [For Sale] etc in Server Chunks
     default: op
 
 # Unclaim Permissions

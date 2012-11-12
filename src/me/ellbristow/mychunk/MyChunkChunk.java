@@ -413,9 +413,6 @@ public class MyChunkChunk {
     /*
      * Background Methods
      */
-    private String dimsToConfigString() {
-        return dims[0] + "_" + dims[1] + "_" + dims[2];
-    }
     
     private Block findCorner(String corner) {
         int y = chunk.getWorld().getMaxHeight()-1;

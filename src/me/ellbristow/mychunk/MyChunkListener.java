@@ -777,13 +777,14 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             Block block = event.getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (Lang.get("Everyone").equals(line1.toUpperCase())) {
+            if (Lang.get("Everyone").equalsIgnoreCase(line1.toUpperCase())) {
                 line1 = "*";
             }
             String line2 = event.getLine(2).toUpperCase();
-            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+            String owner = chunk.getOwner();
+            if (!owner.equalsIgnoreCase(player.getName()) && !(owner.equalsIgnoreCase("server") && player.hasPermission("mychunk.server.signs"))) {
                 player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
-            } else if ("".equals(line1) || line1.contains(" ")) {
+           } else if ("".equals(line1) || line1.contains(" ")) {
                 player.sendMessage(ChatColor.RED + Lang.get("Line2Player"));
             } else if (line1.equalsIgnoreCase(player.getName())) {
                 player.sendMessage(ChatColor.RED + Lang.get("AllowSelf"));
@@ -824,6 +825,7 @@ public class MyChunkListener implements Listener {
                     if (!"".equals(errors)) {
                         player.sendMessage(ChatColor.RED + "Flags not found: " + errors);
                     }
+                    chunk.allow(targetName, line2.replaceAll(" ",""));
                     player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags added: " + ChatColor.GREEN + line2.replaceAll(" ",""));
                     if (!"*".equals(targetName)) {
                         player.sendMessage(ChatColor.GREEN + "Allowed: " + chunk.getAllowedFlags(targetName));
@@ -846,11 +848,12 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             Block block = event.getBlock();
             MyChunkChunk chunk = getChunk(block);
-            if (Lang.get("Everyone").equals(line1.toUpperCase())) {
+            if (Lang.get("Everyone").equalsIgnoreCase(line1.toUpperCase())) {
                 line1 = "*";
             }
             String line2 = event.getLine(2).toUpperCase();
-            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+            String owner = chunk.getOwner();
+            if (!owner.equalsIgnoreCase(player.getName()) && !(owner.equalsIgnoreCase("server") && player.hasPermission("mychunk.server.signs"))) {
                 player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
             } else if ("".equals(line1) || line1.contains(" ")) {
                 player.sendMessage(ChatColor.RED + Lang.get("Line2Player"));
@@ -895,6 +898,7 @@ public class MyChunkListener implements Listener {
                     if (!"".equals(errors)) {
                         player.sendMessage(ChatColor.RED + "Flags not found: " + errors);
                     }
+                    chunk.disallow(targetName, line2.replaceAll(" ",""));
                     player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags removed: " + ChatColor.GREEN + line2.replaceAll(" ",""));
                     if (!"*".equals(targetName)) {
                         player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
@@ -927,7 +931,7 @@ public class MyChunkListener implements Listener {
                 event.setCancelled(true);
                 breakSign(event.getBlock());
                 allowed = false;
-            } else if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+            } else if (!chunk.getOwner().equalsIgnoreCase(player.getName()) && !(chunk.getOwner().equalsIgnoreCase("server") && player.hasPermission("mychunk.server.signs"))) {
                 player.sendMessage(ChatColor.RED + "You can't sell this chunk, you don't own it!");
                 event.setCancelled(true);
                 breakSign(event.getBlock());
@@ -970,7 +974,7 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             MyChunkChunk chunk = getChunk(event.getBlock());
             boolean allowed = true;
-            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+            if (!chunk.getOwner().equalsIgnoreCase(player.getName()) && !(chunk.getOwner().equalsIgnoreCase("server") && player.hasPermission("mychunk.server.signs"))) {
                 player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
                 event.setCancelled(true);
                 breakSign(event.getBlock());
@@ -990,7 +994,7 @@ public class MyChunkListener implements Listener {
             Player player = event.getPlayer();
             MyChunkChunk chunk = getChunk(event.getBlock());
             boolean allowed = true;
-            if (!chunk.getOwner().equalsIgnoreCase(player.getName())) {
+            if (!chunk.getOwner().equalsIgnoreCase(player.getName()) && !(chunk.getOwner().equalsIgnoreCase("server") && player.hasPermission("mychunk.server.signs"))) {
                 player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
                 event.setCancelled(true);
                 breakSign(event.getBlock());
