@@ -1,21 +1,26 @@
 package me.ellbristow.mychunk;
 
 import java.util.*;
+
 import me.ellbristow.mychunk.lang.Lang;
-import org.bukkit.*;
+
+import org.bukkit.*; //This has to go soon
 import org.bukkit.World.Environment;
+
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+
 import org.bukkit.entity.*;
+
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockIgniteEvent.IgniteCause;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.hanging.HangingBreakByEntityEvent;
-import org.bukkit.event.hanging.HangingPlaceEvent;
+import org.bukkit.event.hanging.*;
 import org.bukkit.event.player.*;
+
 import org.bukkit.inventory.ItemStack;
 
 public class MyChunkListener implements Listener {
@@ -51,10 +56,10 @@ public class MyChunkListener implements Listener {
     public void onBlockPlace (BlockPlaceEvent event) {
         if (event.isCancelled())
             return;
+        Player player = event.getPlayer();
         Block block = event.getBlock();
         MyChunkChunk chunk = getChunk(block);
         if (chunk.isClaimed() || plugin.protectUnclaimed) {
-            Player player = event.getPlayer();
             if (chunk.isClaimed()) {
                 String owner = chunk.getOwner();
                 if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
@@ -131,7 +136,7 @@ public class MyChunkListener implements Listener {
             String toOwner = getOwner(toBlock.getChunk());
             String fromOwner = getOwner(block.getChunk());
             if (!toOwner.equalsIgnoreCase(fromOwner)) {
-                event.setCancelled(true);
+                event.setCancelled(true);;
             }
         }
     }
@@ -1012,10 +1017,26 @@ public class MyChunkListener implements Listener {
         if (event.isCancelled())
             return;
         Player player = event.getPlayer();
+        Block block = event.getBlock();
         MyChunkChunk chunk = getChunk(event.getEntity().getLocation().getBlock());
-        if (!player.hasPermission("mychunk.override") && (!player.getName().equals(chunk.getOwner()) && !chunk.isAllowed(player.getName(), "B")) || plugin.protectUnclaimed) {
+        /*if (!player.hasPermission("mychunk.override") && (!player.getName().equals(chunk.getOwner()) && !chunk.isAllowed(player.getName(), "B")) || plugin.protectUnclaimed) {
             player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
             event.setCancelled(true);
+        } */
+        
+        if (chunk.isClaimed() || plugin.protectUnclaimed) {
+            if (chunk.isClaimed()) {
+                String owner = chunk.getOwner();
+                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !WorldGuardHook.isRegion(event.getBlock().getLocation())) {
+                    if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.build"))) {
+                        player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
+                        event.setCancelled(true);
+                    }
+                }
+            } else if (!player.hasPermission("mychunk.override")) {
+                event.setCancelled(true);
+                player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
+            }
         }
     }
     
@@ -1026,15 +1047,20 @@ public class MyChunkListener implements Listener {
         Entity remover = event.getRemover();
         MyChunkChunk chunk = getChunk(event.getEntity().getLocation().getBlock());
         if (chunk.isClaimed() || plugin.protectUnclaimed) {
-            if (remover instanceof Player) {
-                if (!((Player)remover).hasPermission("mychunk.override") && (chunk != null && !((Player)remover).getName().equals(chunk.getOwner()) && !chunk.isAllowed(((Player)remover).getName(), "B")) || plugin.protectUnclaimed) {
-                    ((Player)remover).sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
-                    event.setCancelled(true);
+            if (remover instanceof Player && chunk.isClaimed()) {
+                String owner = chunk.getOwner();
+                if (!owner.equalsIgnoreCase(((Player)remover).getName())&& !chunk.isAllowed(((Player)remover).getName(), "D")) {
+                    if ((!owner.equalsIgnoreCase("server") && !((Player)remover).hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !((Player)remover).hasPermission("mychunk.server.destroy"))) {
+                    	((Player)remover).sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
+                        event.setCancelled(true);
+                    }
                 }
-            } else {
+            } else if (!((Player)remover).hasPermission("mychunk.override")) {
+            	((Player)remover).sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
                 event.setCancelled(true);
             }
         }
+         
     }
     
     @EventHandler (priority = EventPriority.NORMAL)
