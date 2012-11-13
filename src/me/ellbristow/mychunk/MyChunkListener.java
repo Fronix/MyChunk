@@ -792,7 +792,7 @@ public class MyChunkListener implements Listener {
                 player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
            } else if ("".equals(line1) || line1.contains(" ")) {
                 player.sendMessage(ChatColor.RED + Lang.get("Line2Player"));
-            } else if (line1.equalsIgnoreCase(player.getName())) {
+            } else if (line1.equalsIgnoreCase(player.getName()) && !chunk.getOwner().equalsIgnoreCase("Server")) {
                 player.sendMessage(ChatColor.RED + Lang.get("AllowSelf"));
             } else {
                 if ("".equals(line2)) {
@@ -838,10 +838,10 @@ public class MyChunkListener implements Listener {
                     }
                     player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
                 } else if (found && "*".equalsIgnoreCase(line2)) {
-                    chunk.allow(targetName, "*");
+                    chunk.allow(targetName, line2.replaceAll(" ",""));
                     player.sendMessage(ChatColor.GOLD + Lang.get("PermissionsUpdated"));
                     player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags added: " + ChatColor.GREEN + line2.replaceAll(" ",""));
-                    if (!"*".equals(targetName)) {
+                    if (!"*".equals(line2)) {
                         player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
                     }
                     player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
@@ -863,7 +863,7 @@ public class MyChunkListener implements Listener {
                 player.sendMessage(ChatColor.RED + Lang.get("DoNotOwn"));
             } else if ("".equals(line1) || line1.contains(" ")) {
                 player.sendMessage(ChatColor.RED + Lang.get("Line2Player"));
-            } else if (line1.equalsIgnoreCase(player.getName())) {
+            } else if (line1.equalsIgnoreCase(player.getName()) && !chunk.getOwner().equalsIgnoreCase("Server")) {
                 player.sendMessage(ChatColor.RED + "You cannot disallow yourself!");
             } else if (!"*".equals(line1) && chunk.isAllowed("*",line2)) {
                 player.sendMessage(ChatColor.RED + "You cannot disallow flags allowed to EVERYONE!");
@@ -911,10 +911,10 @@ public class MyChunkListener implements Listener {
                     }
                     player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");
                 } else if (found && "*".equalsIgnoreCase(line2)) {
-                    chunk.disallow(targetName, "*");
+                    chunk.disallow(targetName, line2.replaceAll(" ", ""));
                     player.sendMessage(ChatColor.GOLD + Lang.get("PermissionsUpdated"));
                     player.sendMessage(ChatColor.WHITE + displayName + ChatColor.GOLD + " has had the following flags removed: " + ChatColor.GREEN + line2.replaceAll(" ",""));
-                    if (!"*".equals(targetName)) {
+                    if (!"*".equals(line2)) {
                         player.sendMessage(ChatColor.GREEN + "New Flags: " + chunk.getAllowedFlags(targetName));
                     }
                     player.sendMessage(ChatColor.GOLD + "Use an [owner] sign to see all permission flags");

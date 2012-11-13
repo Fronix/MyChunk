@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 2.0.3
+version: 2.0.4
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.

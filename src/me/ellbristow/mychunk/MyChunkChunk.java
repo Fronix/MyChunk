@@ -345,7 +345,7 @@ public class MyChunkChunk {
         if (allowedFlags != null) {
             char[] flags = allowedFlags.toUpperCase().toCharArray();
             for (char checkFlag: flags) {
-                for (char thisFlag : flag.toCharArray()) {
+                for (char thisFlag : flag.toUpperCase().toCharArray()) {
                     if (thisFlag == checkFlag || "*".charAt(0) == checkFlag) {
                         return true;
                     }
@@ -356,7 +356,7 @@ public class MyChunkChunk {
         if (allowedFlags != null) {
             char[] flags = allowedFlags.toUpperCase().toCharArray();
             for (char checkFlag: flags) {
-                for (char thisFlag : flag.toCharArray()) {
+                for (char thisFlag : flag.toUpperCase().toCharArray()) {
                     if (thisFlag == checkFlag || "*".charAt(0) == checkFlag) {
                         return true;
                     }
