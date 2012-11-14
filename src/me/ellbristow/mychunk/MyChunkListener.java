@@ -6,6 +6,7 @@ import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -92,11 +93,21 @@ public class MyChunkListener implements Listener {
                 if (!owner.equalsIgnoreCase(player.getName())&& !chunk.isAllowed(player.getName(), "D")) {
                     if ((!owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.override")) || (owner.equalsIgnoreCase("server") && !player.hasPermission("mychunk.server.destroy"))) {
                         player.sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
+                        if (event.getBlock().getState() instanceof Sign) {
+                            Sign sign = (Sign)event.getBlock().getState();
+                            sign.setLine(0, sign.getLine(0));
+                            sign.update();
+                        }
                         event.setCancelled(true);
                     }
                 }
             } else if (!player.hasPermission("mychunk.override")) {
                 player.sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
+                if (event.getBlock().getState() instanceof Sign) {
+                    Sign sign = (Sign)event.getBlock().getState();
+                    sign.setLine(0, sign.getLine(0));
+                    sign.update();
+                }
                 event.setCancelled(true);
             }
         }
@@ -694,7 +705,7 @@ public class MyChunkListener implements Listener {
                     }
                     int allowance = max - claimed;
                     if (allowance < 0) allowance = 0;
-                    if (plugin.foundEconomy) {
+                    if (plugin.foundEconomy && !player.hasPermission("mychunk.free") && !correctName.equalsIgnoreCase("Server")) {
                         double areaPrice = 0;
                         for (Chunk chunk : foundChunks) {
                             MyChunkChunk myChunk = getChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());

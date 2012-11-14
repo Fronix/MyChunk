@@ -236,7 +236,7 @@ public class MyChunkChunk {
         String allowedPlayers = "";
         Object[] players = allowed.keySet().toArray();
         if (players.length != 0) {
-            if ("*".equals((String)players[0])) {
+            if ("*".equals((String)players[0]) && getAllowedFlags("*").equalsIgnoreCase("*")) {
                 allowedPlayers = Lang.get("Everyone")+"(*)";
             } else {
                 for (Object player : players) {
