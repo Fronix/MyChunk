@@ -113,11 +113,10 @@ public class MyChunkListener implements Listener {
     
     @EventHandler (priority = EventPriority.NORMAL)
     public void onBlockIgnite (BlockIgniteEvent event) {
-        if (event.isCancelled())
-            return;
-        String owner = getOwner(event.getBlock().getChunk());
-        if (!owner.equalsIgnoreCase("Unowned")) {
-            if (event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+        if (event.isCancelled()) return;
+        if (event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
+            String owner = getOwner(event.getBlock().getChunk());
+            if (!owner.equalsIgnoreCase("Unowned")) {
                 MyChunkChunk chunk = getChunk(event.getBlock());
                 Player player = event.getPlayer();
                 if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "I")) {
@@ -126,13 +125,16 @@ public class MyChunkListener implements Listener {
                         event.setCancelled(true);
                     }
                 }
-            } else if (event.getCause().equals(IgniteCause.LAVA) || event.getCause().equals(IgniteCause.SPREAD)) {
-                event.setCancelled(true);
+            } else if (plugin.protectUnclaimed) {
+                Player player = event.getPlayer();
+                if (!player.hasPermission("mychunk.override")) {
+                    player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
+                    event.setCancelled(true);
+                }
             }
-        } else if (plugin.protectUnclaimed && event.getCause().equals(IgniteCause.FLINT_AND_STEEL)) {
-            Player player = event.getPlayer();
-            if (player != null && !player.hasPermission("mychunk.override")) {
-                player.sendMessage(ChatColor.RED + Lang.get("NoPermsFire"));
+        } else if (event.getCause().equals(IgniteCause.LAVA) || event.getCause().equals(IgniteCause.SPREAD)) {
+            String owner = getOwner(event.getBlock().getChunk());
+            if (!owner.equalsIgnoreCase("Unowned") || plugin.protectUnclaimed) {
                 event.setCancelled(true);
             }
         }
@@ -376,9 +378,11 @@ public class MyChunkListener implements Listener {
             return;
         LivingEntity mob = event.getEntity();
         if (mob instanceof Monster || mob instanceof Slime) {
-            MyChunkChunk chunk = getChunk(event.getLocation().getBlock());
-            if (chunk.isClaimed() && !chunk.getAllowMobs()) {
-                event.setCancelled(true);
+            if (isClaimed(event.getLocation().getBlock().getChunk())) {
+                MyChunkChunk chunk = getChunk(event.getLocation().getBlock());
+                if (!chunk.getAllowMobs()) {
+                    event.setCancelled(true);
+                }
             }
         }
     }
