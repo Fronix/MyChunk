@@ -40,9 +40,7 @@ public class MyChunkListener implements Listener {
                 if (isClaimed(block.getChunk())) {
                     saveBanks.add(block);
                 } else if (plugin.protectUnclaimed) {
-                    if (!(event.getEntity() instanceof TNTPrimed) || !plugin.unclaimedTNT) {
-                        saveBanks.add(block);
-                    } else if (event.getEntity() instanceof TNTPrimed && plugin.unclaimedTNT) {
+                    if (!(event.getEntity() instanceof TNTPrimed) || (event.getEntity() instanceof TNTPrimed && plugin.unclaimedTNT)) {
                         saveBanks.add(block);
                     }
                 }
