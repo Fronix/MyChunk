@@ -6,7 +6,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 public class MyChunkVaultLink {
     
     private static MyChunk plugin;
-    public Economy economy = null;
+    public static Economy economy = null;
     public boolean foundEconomy = false;
     public String economyName = "";
     
@@ -15,7 +15,7 @@ public class MyChunkVaultLink {
         initEconomy();
     }
     
-    public final void initEconomy() {
+    private void initEconomy() {
         RegisteredServiceProvider<Economy> economyProvider = plugin.getServer().getServicesManager().getRegistration(Economy.class);
         if (economyProvider != null) {
             economy = economyProvider.getProvider();
@@ -24,5 +24,9 @@ public class MyChunkVaultLink {
             foundEconomy = true;
             economyName = plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class).getProvider().getName();
         }
+    }
+    
+    public static Economy getEconomy() {
+        return economy;
     }
 }

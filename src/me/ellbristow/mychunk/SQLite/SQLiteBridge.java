@@ -3,23 +3,24 @@ package me.ellbristow.mychunk.SQLite;
 import java.io.File;
 import java.sql.*;
 import java.util.HashMap;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 
 public class SQLiteBridge {
 
-    private static JavaPlugin plugin;
-    private Connection conn;
-    private File sqlFile;
-    private Statement statement;
-    private HashMap<Integer, HashMap<String, Object>> rows = new HashMap<Integer, HashMap<String, Object>>();
-    private int numRows = 0;
+    private static final Plugin plugin;
+    private static Connection conn;
+    private static File sqlFile;
+    private static Statement statement;
+    private static HashMap<Integer, HashMap<String, Object>> rows = new HashMap<Integer, HashMap<String, Object>>();
+    private static int numRows = 0;
     
-    public SQLiteBridge (JavaPlugin instance) {
-        plugin = instance;
+    static {
+        plugin = Bukkit.getPluginManager().getPlugin("MyChunk");
         sqlFile = new File("plugins/" + plugin.getDataFolder().getName() + File.separator + plugin.getName() + ".db");
     }
     
-    public Connection getConnection() {
+    public static Connection getConnection() {
         try {
             if (conn == null || conn.isClosed()) {
                 return open();
@@ -30,7 +31,7 @@ public class SQLiteBridge {
         return conn;
     }
     
-    public Connection open() {
+    public static Connection open() {
         try {
             if (conn == null || conn.isClosed()) {
             	Class.forName("org.sqlite.JDBC");
@@ -43,7 +44,7 @@ public class SQLiteBridge {
         return null;
     }
     
-    public void close() {
+    public static void close() {
         try {
             if (conn != null && !conn.isClosed()) {
                 conn.close();
@@ -53,10 +54,10 @@ public class SQLiteBridge {
         }
     }
     
-    public boolean checkTable(String tableName) {
+    public static boolean checkTable(String tableName) {
         DatabaseMetaData dbm;
         try {
-            dbm = this.open().getMetaData();
+            dbm = open().getMetaData();
             ResultSet tables = dbm.getTables(null, null, tableName, null);
             if (tables.next()) {
                 close();
@@ -71,7 +72,7 @@ public class SQLiteBridge {
         }
     }
     
-    public boolean createTable(String tableName, String[] columns, String[] dims) {
+    public static boolean createTable(String tableName, String[] columns, String[] dims) {
         try {
             if (conn == null || conn.isClosed())
                 open();
@@ -92,7 +93,7 @@ public class SQLiteBridge {
         return true;
     }
     
-    public ResultSet query(String query) {
+    public static ResultSet query(String query) {
         try {
             if (conn == null || conn.isClosed())
                 open();
@@ -109,7 +110,7 @@ public class SQLiteBridge {
         return null;
     }
     
-    public HashMap<Integer, HashMap<String, Object>> select(String fields, String tableName, String where, String group, String order) {
+    public static HashMap<Integer, HashMap<String, Object>> select(String fields, String tableName, String where, String group, String order) {
         if ("".equals(fields) || fields == null) {
             fields = "*";
         }
@@ -165,7 +166,7 @@ public class SQLiteBridge {
         return null;
     }
     
-    public boolean tableContainsColumn(String tableName, String columnName) {
+    public static boolean tableContainsColumn(String tableName, String columnName) {
         try {
             if (conn == null || conn.isClosed())
                 open();
@@ -183,7 +184,7 @@ public class SQLiteBridge {
         return true;
     }
     
-    public void addColumn(String tableName, String columnDef) {
+    public static void addColumn(String tableName, String columnDef) {
         try {
             if (conn == null || conn.isClosed())
                 open();

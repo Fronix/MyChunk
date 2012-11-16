@@ -12,7 +12,7 @@ public class Lang {
 
     private static FileConfiguration langStore;
     private static HashMap<String, String> lang = new HashMap<String, String>();
-    
+
     public static String get(String key) {
         return lang.get(key);
     }
@@ -64,10 +64,14 @@ public class Lang {
         loadLangPhrase("PermissionsUpdated", "Permissions updated!");
         loadLangPhrase("ChunkIs", "This chunk is");
         loadLangPhrase("StartClaimArea1", "Claim Area Started!");
-        loadLangPhrase("ClaimAreaCancelled", "Area claim cancelled!");
         loadLangPhrase("StartClaimArea2", "Place a second [ClaimArea] sign to claim all chunks in the area.");
+        loadLangPhrase("StartUnclaimArea1", "Unclaim Area Started!");
+        loadLangPhrase("StartUnclaimArea2", "Place a second [UnclaimArea] sign to unclaim all chunks in the area.");
+        loadLangPhrase("ClaimAreaCancelled", "Area claim cancelled!");
+        loadLangPhrase("UnclaimAreaCancelled", "Area unclaim cancelled!");
         loadLangPhrase("YouWereCharged", "You were charged");
         loadLangPhrase("ChunksClaimed", "Chunks Claimed");
+        loadLangPhrase("ChunksUnclaimed", "Chunks Unclaimed");
         loadLangPhrase("ChunksOwned", "Owned Chunks");
         loadLangPhrase("TotalClaimedChunks", "Total Claimed Chunks");
         loadLangPhrase("Yours", "Yours");
@@ -101,12 +105,17 @@ public class Lang {
         loadLangPhrase("Chunks", "chunks");
         loadLangPhrase("NoNeighbours", "You cannot claim a chunk next to someone else's chunk!");
         loadLangPhrase("CantAfford", "You cannot afford to claim that chunk!");
+        loadLangPhrase("MaxChunksReached", "Claiming that would put you over your maximum chunk limit!");
         loadLangPhrase("DoNotOwn", "You do not own this chunk!");
+        loadLangPhrase("NoChunksOwned", "You do not own any chunks!");
         loadLangPhrase("Line2Player", "Line 2 must contain a player name (or * for all)!");
         loadLangPhrase("AllowSelf", "You dont need to allow yourself!");
         loadLangPhrase("CannotDestroyClaim", "You cannot destroy another player's Claim sign!");
         loadLangPhrase("ClaimAreaWorldError", "[ClaimArea] signs must both be in the same world!");
+        loadLangPhrase("UnclaimAreaWorldError", "[UnclaimArea] signs must both be in the same world!");
+        loadLangPhrase("UnclaimAreaNoneFound", "There were no chunks to be unclaimed in that area!");
         loadLangPhrase("AreaTooBig", "You cannot claim more than 64 chunks in one area!");
+        loadLangPhrase("UnclaimAreaTooBig", "You cannot unclaim more than 64 chunks in one area!");
         loadLangPhrase("FoundClaimedInArea", "At least one chunk in the specified area is already claimed!");
         loadLangPhrase("FoundNeighboursInArea", "At least one chunk in the specified area has a neighbour!");
         loadLangPhrase("ClaimAreaTooLarge", "cannot claim that many chunks!");

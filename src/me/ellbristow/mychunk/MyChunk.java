@@ -4,11 +4,11 @@ import java.io.File;
 import java.util.*;
 import me.ellbristow.mychunk.SQLite.SQLiteBridge;
 import me.ellbristow.mychunk.lang.Lang;
+import me.ellbristow.mychunk.listeners.*;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -19,27 +19,26 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class MyChunk extends JavaPlugin {
 
-    protected FileConfiguration config;
-    protected boolean foundVault = false;
-    protected boolean foundEconomy = false;
-    protected boolean unclaimRefund = false;
-    protected boolean allowNeighbours = false;
-    protected boolean allowOverbuy = false;
-    protected boolean protectUnclaimed = false;
-    protected boolean unclaimedTNT = false;
-    protected boolean useClaimExpiry = false;
-    protected boolean allowNether = true;
-    protected boolean allowEnd = true;
-    protected int claimExpiryDays;
-    protected boolean overbuyP2P = true;
-    protected double chunkPrice = 0.00;
-    protected double overbuyPrice = 0.00;
-    protected int maxChunks = 8;
-    protected MyChunkVaultLink vault;
-    protected HashMap<String, Block> pendingAreas = new HashMap<String, Block>();
+    private FileConfiguration config;
+    private static boolean foundEconomy = false;
+    
+    // Toggleable settings
+    private static boolean unclaimRefund = false;
+    private static boolean allowNeighbours = false;
+    private static boolean allowOverbuy = false;
+    private static boolean protectUnclaimed = false;
+    private static boolean unclaimedTNT = false;
+    private static boolean useClaimExpiry = false;
+    private static boolean allowNether = true;
+    private static boolean allowEnd = true;
+    private static int claimExpiryDays;
+    private static boolean overbuyP2P = true;
+    private static double chunkPrice = 0.00;
+    private static double overbuyPrice = 0.00;
+    private static int maxChunks = 8;
+    private MyChunkVaultLink vault;
     
     // LOOK! SQLite stuff!
-    protected SQLiteBridge chunkDb;
     private String[] tableColumns = {"world","x","z","owner","allowed","salePrice","allowMobs","lastActive", "PRIMARY KEY"};
     private String[] tableDims = {"TEXT NOT NULL", "INTEGER NOT NULL", "INTEGER NOT NULL", "TEXT NOT NULL", "TEXT NOT NULL", "INTEGER NOT NULL", "INTEGER(1) NOT NULL", "LONG NOT NULL", "(world, x, z)"};
     
@@ -53,13 +52,17 @@ public class MyChunk extends JavaPlugin {
         loadConfig(false);
         
         // Register Events
-        getServer().getPluginManager().registerEvents(new MyChunkListener(this), this);
+        getServer().getPluginManager().registerEvents(new AmbientListener(), this);
+        getServer().getPluginManager().registerEvents(new BlockListener(), this);
+        getServer().getPluginManager().registerEvents(new MobListener(), this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(), this);
+        getServer().getPluginManager().registerEvents(new SignListener(), this);
         
     }
     
     @Override
     public void onDisable() {
-        chunkDb.close();
+        SQLiteBridge.close();
     }
     
     @Override
@@ -68,7 +71,7 @@ public class MyChunk extends JavaPlugin {
             if (sender.hasPermission("mychunk.commands.stats")) {
                 PluginDescriptionFile pdfFile = getDescription();
                 sender.sendMessage(ChatColor.GOLD + "MyChunk v"  + ChatColor.WHITE + pdfFile.getVersion() + ChatColor.GOLD + " "+Lang.get("By")+" " + ChatColor.WHITE + "ellbristow");
-                HashMap<Integer, HashMap<String, Object>> result = chunkDb.select("COUNT(*) AS counter", "MyChunks", "", "", "");
+                HashMap<Integer, HashMap<String, Object>> result = SQLiteBridge.select("COUNT(*) AS counter", "MyChunks", "", "", "");
                 if (sender instanceof Player) {
                     sender.sendMessage(ChatColor.GOLD + Lang.get("ChunksOwned")+": " + ChatColor.WHITE + ownedChunkCount(sender.getName()) +"  "+ ChatColor.GOLD + Lang.get("TotalClaimedChunks")+": " + ChatColor.WHITE + result.get(0).get("counter"));
                 } else {
@@ -83,7 +86,7 @@ public class MyChunk extends JavaPlugin {
                 }
                 sender.sendMessage(ChatColor.GOLD + Lang.get("DefaultMax")+": " + ChatColor.WHITE + maxChunks + yourMax);
                 if (foundEconomy){
-                    sender.sendMessage(ChatColor.GOLD + Lang.get("ChunkPrice")+": " + ChatColor.WHITE + vault.economy.format(chunkPrice));
+                    sender.sendMessage(ChatColor.GOLD + Lang.get("ChunkPrice")+": " + ChatColor.WHITE + MyChunkVaultLink.getEconomy().format(chunkPrice));
                     String paid = Lang.get("No");
                     if (unclaimRefund) {
                         paid = Lang.get("Yes");
@@ -99,7 +102,7 @@ public class MyChunk extends JavaPlugin {
                         if (overbuyP2P) {
                             resales = "inc.";
                         }
-                        sender.sendMessage(ChatColor.GOLD + Lang.get("OverbuyFee")+": " + ChatColor.WHITE + vault.economy.format(overbuyPrice) + "(" + resales +" "+Lang.get("Resales")+")");
+                        sender.sendMessage(ChatColor.GOLD + Lang.get("OverbuyFee")+": " + ChatColor.WHITE + MyChunkVaultLink.getEconomy().format(overbuyPrice) + "(" + resales +" "+Lang.get("Resales")+")");
                     }
                 }
                 String claimExpiry;
@@ -171,6 +174,7 @@ public class MyChunk extends JavaPlugin {
                         try {
                             newPrice = Double.parseDouble(args[1]);
                         } catch (NumberFormatException e) {
+                            // TODO: Lang
                             sender.sendMessage(ChatColor.RED + "Amount must be a number! (e.g. 5.00)");
                             sender.sendMessage(ChatColor.RED + "/mychunk price {new_price}");
                             return false;
@@ -178,7 +182,7 @@ public class MyChunk extends JavaPlugin {
                         config.set("chunk_price", newPrice);
                         chunkPrice = newPrice;
                         saveConfig();
-                        sender.sendMessage(ChatColor.GOLD + "Chunk price set to " + vault.economy.format(newPrice));
+                        sender.sendMessage(ChatColor.GOLD + "Chunk price set to " + MyChunkVaultLink.getEconomy().format(newPrice));
                         return true;
                     }
                 } else {
@@ -202,7 +206,7 @@ public class MyChunk extends JavaPlugin {
                         config.set("overbuy_price", newPrice);
                         overbuyPrice = newPrice;
                         saveConfig();
-                        sender.sendMessage(ChatColor.GOLD + "Overbuy price set to " + vault.economy.format(newPrice));
+                        sender.sendMessage(ChatColor.GOLD + "Overbuy price set to " + MyChunkVaultLink.getEconomy().format(newPrice));
                         return true;
                     }
                 } else {
@@ -436,7 +440,7 @@ public class MyChunk extends JavaPlugin {
                     sender.sendMessage(ChatColor.RED + "Player "+ChatColor.WHITE+args[1]+ChatColor.RED+" not found!");
                     return false;
                 }
-                HashMap<Integer, HashMap<String, Object>> results = chunkDb.select("world, x, z","MyChunks","owner = '"+player.getName()+"'","","");
+                HashMap<Integer, HashMap<String, Object>> results = SQLiteBridge.select("world, x, z","MyChunks","owner = '"+player.getName()+"'","","");
                 List<Chunk> chunks = new ArrayList<Chunk>();
                 for (int i = 0; i < results.size(); i++) {
                     HashMap<String, Object> result = results.get(i);
@@ -446,8 +450,7 @@ public class MyChunk extends JavaPlugin {
                     chunks.add(getServer().getWorld(world).getChunkAt(x, z));
                 }
                 for (Chunk thisChunk: chunks) {
-                    MyChunkChunk chunk = new MyChunkChunk(thisChunk.getBlock(0, 0, 0),this);
-                    chunk.unclaim();
+                    MyChunkChunk.unclaim(thisChunk);
                 }
                 sender.sendMessage(ChatColor.GOLD + "All chunks for " + ChatColor.WHITE + player.getName() + ChatColor.GOLD + " are now Unowned!");
             }  else if (args[0].equalsIgnoreCase("purgew")) {
@@ -461,7 +464,7 @@ public class MyChunk extends JavaPlugin {
                     return false;
                 }
                 String worldName = world.getName();
-                chunkDb.query("DELETE FROM MyChunks WHERE world = '"+worldName+"'");
+                SQLiteBridge.query("DELETE FROM MyChunks WHERE world = '"+worldName+"'");
                 sender.sendMessage(ChatColor.GOLD + "All chunks in " + ChatColor.WHITE + worldName + ChatColor.GOLD + " are now Unowned!");
             }
         }
@@ -469,15 +472,27 @@ public class MyChunk extends JavaPlugin {
     }
     
     private void renewAllOwnerships() {
-        chunkDb.query("UPDATE MyChunks SET lastActive = " + (new Date().getTime() / 1000));
+        SQLiteBridge.query("UPDATE MyChunks SET lastActive = " + (new Date().getTime() / 1000));
     }
     
+    /**
+     * Get the number of chunks a player already owns
+     * 
+     * @param playerName Player to check
+     * @return Number of chunks player owns
+     */
     public int ownedChunkCount(String playerName) {
-        HashMap<Integer, HashMap<String, Object>> results = chunkDb.select("COUNT(*) as counter", "MyChunks", "owner = '"+playerName+"'", "","");
+        HashMap<Integer, HashMap<String, Object>> results = SQLiteBridge.select("COUNT(*) as counter", "MyChunks", "owner = '"+playerName+"'", "","");
         return Integer.parseInt(results.get(0).get("counter")+"");
     }
     
-    public int getMaxChunks(CommandSender player) {
+    /**
+     * Get the maximum chunk allowance for a player
+     * 
+     * @param player Player to check
+     * @return Number of chunks player can claim
+     */
+    public static int getMaxChunks(CommandSender player) {
         int max = maxChunks;
         if (player instanceof Player) {
             if (player.hasPermission("mychunk.claim.max.0") || player.hasPermission("mychunk.claim.unlimited")) {
@@ -496,10 +511,9 @@ public class MyChunk extends JavaPlugin {
     }
     
     private void initSQLite() {
-        chunkDb = new SQLiteBridge(this);
-        if (!chunkDb.checkTable("MyChunks")) {
+        if (!SQLiteBridge.checkTable("MyChunks")) {
             // Create empty table
-            chunkDb.createTable("MyChunks", tableColumns, tableDims);
+            SQLiteBridge.createTable("MyChunks", tableColumns, tableDims);
         }
         File chunkFile = new File(getDataFolder(),"chunks.yml");
         if (chunkFile.exists()) {
@@ -523,7 +537,7 @@ public class MyChunk extends JavaPlugin {
                     if (!values.equals("")) {
                         values += ",";
                     }
-                    chunkDb.query("INSERT OR REPLACE INTO MyChunks (world,x,z,owner,allowed,salePrice,allowMobs,lastActive) VALUES ('"+world+"',"+x+","+z+",'"+owner+"','"+allowed+"',"+salePrice+","+(allowMobs?"1":"0")+","+lastActive+")");
+                    SQLiteBridge.query("INSERT OR REPLACE INTO MyChunks (world,x,z,owner,allowed,salePrice,allowMobs,lastActive) VALUES ('"+world+"',"+x+","+z+",'"+owner+"','"+allowed+"',"+salePrice+","+(allowMobs?"1":"0")+","+lastActive+")");
                 }
             }
             getLogger().info("YML > SQLite Conversion Complete!");
@@ -553,9 +567,7 @@ public class MyChunk extends JavaPlugin {
         allowEnd = config.getBoolean("allowEnd", true);
         config.set("allowEnd", allowEnd);
         if (getServer().getPluginManager().isPluginEnabled("Vault")) {
-            foundVault = true;
             vault = new MyChunkVaultLink(this);
-            vault.initEconomy();
             getLogger().info("[Vault] found and hooked!");
             if (vault.foundEconomy) {
                 foundEconomy = true;
@@ -579,4 +591,67 @@ public class MyChunk extends JavaPlugin {
         }
         saveConfig();
     }
+    
+    /**
+     * Return current value of double settings
+     * <p>
+     * Checkable settings: (not case sensitive)<br>
+     * claimExpiryDays - Returns the number of days before a chunk claim expires<br>
+     * maxChunks - Returns the maximum number of chunks a player can own
+     * 
+     * @param setting
+     * @return Setting value or 0 if not found
+     */
+    public static int getIntSetting(String setting) {
+        if (setting.equalsIgnoreCase("claimExpiryDays")) return claimExpiryDays;
+        return 0;
+    }
+    
+    /**
+     * Return current value of double settings
+     * <p>
+     * Checkable settings: (not case sensitive)<br>
+     * chunkPrice - Default price of a chunk<br>
+     * overbuyPrice - Premium added to chunk price when overbuying
+     * 
+     * @param setting
+     * @return Setting value or 0 if not found
+     */
+    public static double getDoubleSetting(String setting) {
+        if (setting.equalsIgnoreCase("chunkPrice")) return chunkPrice;
+        if (setting.equalsIgnoreCase("overbuyPrice")) return overbuyPrice;
+        return 0;
+    }
+    
+    /**
+     * Return current state of boolean settings
+     * <p>
+     * Checkable settings: (not case sensitive)<br>
+     * allowEnd - Checks if players can claim chunks in End worlds<br>
+     * allowNeighbours - Checks if players can claim chunks next to other players<br>
+     * allowNether - Checks if players can claim chunks in Nether worlds<br>
+     * allowOverbuy - Checks if players can buy more chunks than their allowance<br>
+     * foundEconomy - Checks if an economy plugin was found<br>
+     * protectUnclaimed - Checks if unclaimed chunks are protected<br>
+     * unclaimRefund - Checks if players receive a refund hen unclaiming chunks<br>
+     * unclaimedTNT - Checks if TNT is blocked when protectUnclimed is on<br>
+     * useClaimExpiry - Checks if chunk ownership expires
+     * 
+     * @param setting
+     * @return Setting state or false if not found
+     */
+    public static boolean getToggle(String setting) {
+        if (setting.equalsIgnoreCase("allowEnd")) return allowEnd;
+        if (setting.equalsIgnoreCase("allowNeighbours")) return allowNeighbours;
+        if (setting.equalsIgnoreCase("allowNether")) return allowNether;
+        if (setting.equalsIgnoreCase("allowOverbuy")) return allowOverbuy;
+        if (setting.equalsIgnoreCase("foundEconomy")) return foundEconomy;
+        if (setting.equalsIgnoreCase("overbuyP2P")) return overbuyP2P;
+        if (setting.equalsIgnoreCase("protectUnclaimed")) return protectUnclaimed;
+        if (setting.equalsIgnoreCase("unclaimRefund")) return unclaimRefund;
+        if (setting.equalsIgnoreCase("unclaimedTNT")) return unclaimedTNT;
+        if (setting.equalsIgnoreCase("useClaimExpiry")) return useClaimExpiry;
+        return false;
+    }
+    
 }

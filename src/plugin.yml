@@ -1,6 +1,6 @@
 name: MyChunk
 main: me.ellbristow.mychunk.MyChunk
-version: 2.0.7
+version: 2.1.0
 author: ellbristow
 description: >
              Buy/Sell chunks for currency, get protection, make profit.
@@ -173,9 +173,11 @@ permissions:
       mychunk.server.destroy: true
       mychunk.server.doors: true
       mychunk.server.ignite: true
+      mychunk.server.lava: true
       mychunk.server.use: true
       mychunk.server.special: true
       mychunk.server.signs: true
+      mychunk.server.water: true
   mychunk.server.build:
     description: Can build in server owned chunks
     default: op
@@ -191,14 +193,20 @@ permissions:
   mychunk.server.ignite:
     description: Can use explosives and Flint & Steel in server owned chunks
     default: op
+  mychunk.server.lava:
+    description: Can empty lava uckets in Server owned chunks
+    default: op
   mychunk.server.use:
-    description: Can use levers, buttons etc in server owned chunks
+    description: Can use levers, buttons etc in Server owned chunks
     default: op
   mychunk.server.special:
-    description: Can access furnaces, dispensers and brewing stands in server owned chunks
+    description: Can access furnaces, dispensers and brewing stands in Server owned chunks
     default: op
   mychunk.server.signs:
-    description: Can use [Allow], [For Sale] etc in Server Chunks
+    description: Can use [Allow], [For Sale] etc in Server owned chunks
+    default: op
+  mychunk.server.water:
+    description: Can empty water buckets in Server owned chunks
     default: op
 
 # Unclaim Permissions
