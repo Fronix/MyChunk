@@ -1312,35 +1312,37 @@ public class SignListener implements Listener {
             Block block = event.getBlock();
             MyChunkChunk chunk = new MyChunkChunk(block);
             Player player = event.getPlayer();
+            
+            if(!WorldGuardHook.isRegion(block.getLocation())){
 
-            if (chunk.isClaimed()) {
-
-                String owner = chunk.getOwner();
-                if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !player.hasPermission("mychunk.override")) {
-                    event.setCancelled(true);
-                    breakSign(block);
-                }
-
-            } else if (MyChunk.getToggle("protectUnclaimed") && !player.hasPermission("mychunk.override")) {
-
-                event.setCancelled(true);
-                breakSign(block);
-
-                if (!WorldGuardHook.isRegion(block.getLocation())) {
-                    if (chunk.isClaimed()) {
-                        String owner = chunk.getOwner();
-                        if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !player.hasPermission("mychunk.override")) {
-                            event.setCancelled(true);
-                            breakSign(block);
-                        }
-                    } else if (MyChunk.getToggle("protectUnclaimed") && !player.hasPermission("mychunk.override")) {
+                if (chunk.isClaimed()) {
+    
+                    String owner = chunk.getOwner();
+                    if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !player.hasPermission("mychunk.override")) {
                         event.setCancelled(true);
                         breakSign(block);
                     }
+    
+                } else if (MyChunk.getToggle("protectUnclaimed") && !player.hasPermission("mychunk.override")) {
+    
+                    event.setCancelled(true);
+                    breakSign(block);
+    
+                    if (!WorldGuardHook.isRegion(block.getLocation())) {
+                        if (chunk.isClaimed()) {
+                            String owner = chunk.getOwner();
+                            if (!owner.equalsIgnoreCase(player.getName()) && !chunk.isAllowed(player.getName(), "B") && !player.hasPermission("mychunk.override")) {
+                                event.setCancelled(true);
+                                breakSign(block);
+                            }
+                        } else if (MyChunk.getToggle("protectUnclaimed") && !player.hasPermission("mychunk.override")) {
+                            event.setCancelled(true);
+                            breakSign(block);
+                        }
+                    }
+    
                 }
-
             }
-
         }
 
     }
