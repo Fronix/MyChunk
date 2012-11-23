@@ -2,7 +2,7 @@ package me.ellbristow.mychunk;
 
 import java.io.File;
 import java.util.*;
-import me.ellbristow.mychunk.SQLite.SQLiteBridge;
+import me.ellbristow.mychunk.utils.SQLiteBridge;
 import me.ellbristow.mychunk.lang.Lang;
 import me.ellbristow.mychunk.listeners.*;
 import org.bukkit.ChatColor;

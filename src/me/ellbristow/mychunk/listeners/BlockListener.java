@@ -17,6 +17,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 
 
@@ -147,13 +148,17 @@ public class BlockListener implements Listener {
         
         if (event.isCancelled()) return;
         
-        if (MyChunkChunk.isClaimed(event.getBlock().getChunk())) {
-            event.setCancelled(true);
+        if (event.getSource().getType().equals(Material.WATER) || event.getSource().getType().equals(Material.LAVA)) {
+            
+            if (MyChunkChunk.isClaimed(event.getBlock().getChunk())) {
+                event.setCancelled(true);
+            }
+            
         }
         
     }
     
-    @EventHandler (priority = EventPriority.NORMAL)
+    @EventHandler (priority = EventPriority.HIGH)
     public void onHangingBreak(HangingBreakByEntityEvent event) {
         
         if (event.isCancelled()) return;
@@ -163,18 +168,24 @@ public class BlockListener implements Listener {
         
         if (remover instanceof Player) {
             
-            if (!MyChunkChunk.isAllowed(chunk, (Player)remover, "D")) {
+            if (!MyChunkChunk.isAllowed(chunk, (Player)remover, "D") && !WorldGuardHook.isRegion(event.getEntity().getLocation())) {
                 
                 ((Player)remover).sendMessage(ChatColor.RED + Lang.get("NoPermsBreak"));
                 event.setCancelled(true);
                 
             }
             
+        } else if (event.getCause().equals(RemoveCause.EXPLOSION)) {
+            if (MyChunkChunk.isClaimed(chunk)) {
+                
+                event.setCancelled(true);
+                
+            }
         }
          
     }
     
-    @EventHandler (priority = EventPriority.NORMAL)
+    @EventHandler (priority = EventPriority.HIGH)
     public void onHangingPlace(HangingPlaceEvent event) {
         
         if (event.isCancelled()) return;
@@ -182,7 +193,7 @@ public class BlockListener implements Listener {
         Player player = event.getPlayer();
         Chunk chunk = event.getBlock().getChunk();
         
-        if (!MyChunkChunk.isAllowed(chunk, player, "B")) {
+        if (!MyChunkChunk.isAllowed(chunk, player, "B") && !WorldGuardHook.isRegion(event.getEntity().getLocation())) {
             
             player.sendMessage(ChatColor.RED + Lang.get("NoPermsBuild"));
             event.setCancelled(true);

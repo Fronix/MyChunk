@@ -26,7 +26,7 @@ public class PlayerListener implements Listener {
     public void onPlayerDamage (EntityDamageByEntityEvent event) {
         
         if (event.isCancelled()) return;
-        
+
         Entity entity = event.getEntity();
         
         if (entity instanceof Player) {

@@ -41,7 +41,7 @@ public class MobListener implements Listener {
         if (mob instanceof Monster || mob instanceof Slime) {
             
             if (!MyChunkChunk.getAllowMobs(event.getLocation().getBlock().getChunk())) {
-                    event.setCancelled(true);
+                event.setCancelled(true);
             }
             
         }

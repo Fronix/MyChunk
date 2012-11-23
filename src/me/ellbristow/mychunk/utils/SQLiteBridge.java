@@ -1,4 +1,4 @@
-package me.ellbristow.mychunk.SQLite;
+package me.ellbristow.mychunk.utils;
 
 import java.io.File;
 import java.sql.*;

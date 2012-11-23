@@ -3,7 +3,7 @@ package me.ellbristow.mychunk;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import me.ellbristow.mychunk.SQLite.SQLiteBridge;
+import me.ellbristow.mychunk.utils.SQLiteBridge;
 import me.ellbristow.mychunk.lang.Lang;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -103,7 +103,7 @@ public class MyChunkChunk {
      */
     public void claim(String playerName) {
         this.owner = playerName;
-        SQLiteBridge.query("INSERT OR REPLACE INTO MyChunks (world, x, z, owner, salePrice, allowMobs, allowed, lastActive) VALUES ('"+chunkWorld+"', "+chunkX+", "+chunkZ+", '"+playerName+"', 0, "+(allowMobs?"1":"0")+", '', "+lastActive+")");
+        SQLiteBridge.query("INSERT OR REPLACE INTO MyChunks (world, x, z, owner, salePrice, allowMobs, allowed, lastActive) VALUES ('"+chunkWorld+"', "+chunkX+", "+chunkZ+", '"+playerName+"', 0, 0, '', "+lastActive+")");
         forSale = false;
         if (chunkNE.isLiquid() || chunkNE.getTypeId() == 79) {
             chunkNE.setTypeId(4);
@@ -686,20 +686,27 @@ public class MyChunkChunk {
      * @return 
      */
     public static boolean isFlag(String flag) {
+        
         for (String thisFlag : availableFlags) {
+            
             if (thisFlag.equalsIgnoreCase(flag)) {
                 return true;
             }
+            
         }
+        
         return false;
+        
     }
     
     public static boolean getAllowMobs(Chunk chunk) {
         
-        HashMap<Integer, HashMap<String, Object>> results = SQLiteBridge.select("allowMobs", "MyChunks", "world = '"+chunk.getWorld().getName()+"' AND x = "+chunk.getX()+" AND z = " + chunk.getZ() + " AND allowMobs = 0", "", "");
+        HashMap<Integer, HashMap<String, Object>> results = SQLiteBridge.select("allowMobs", "MyChunks", "world = '"+chunk.getWorld().getName()+"' AND x = "+chunk.getX()+" AND z = " + chunk.getZ(), "", "");
         
         if (!results.isEmpty()) {
-            return false;
+            if (results.get(0).get("allowMobs").toString().equalsIgnoreCase("0")) {
+                return false;
+            }
         }
         
         return true;
