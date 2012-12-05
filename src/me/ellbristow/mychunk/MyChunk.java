@@ -521,7 +521,31 @@ public class MyChunk extends JavaPlugin {
 					return false;
 				}
 				String worldName = world.getName();
-				SQLiteBridge.query("DELETE FROM MyChunks WHERE world = '" + worldName + "'");
+				
+				// Start of new way of cleaning chunks
+				
+				HashMap<Integer, HashMap<String, Object>> results = SQLiteBridge.select("x, z", "MyChunks", "world = '" + worldName + "'", "", "");
+				
+				List<Chunk> chunks = new ArrayList<Chunk>();
+				
+				for (int i = 0; i < results.size(); i++) {
+					
+					HashMap<String, Object> result = results.get(i);
+					
+					int x = Integer.parseInt(result.get("x") + "");
+					int z = Integer.parseInt(result.get("z") + "");
+					
+					chunks.add(getServer().getWorld(worldName).getChunkAt(x, z));
+				}
+				
+				for (Chunk thisChunk : chunks) {
+					MyChunkChunk.unclaim(thisChunk);
+				}
+				
+//				SQLiteBridge.query("DELETE FROM MyChunks WHERE world = '" + worldName + "'");
+				
+				// End of new cleaning
+				
 				sender.sendMessage(ChatColor.GOLD + "All chunks in " + ChatColor.WHITE + worldName + ChatColor.GOLD + " are now Unowned!");
 			}
 		}
