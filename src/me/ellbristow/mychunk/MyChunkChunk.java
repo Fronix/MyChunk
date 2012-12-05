@@ -885,6 +885,7 @@ public class MyChunkChunk {
     public static void unclaim(Chunk chunk) {
 //        SQLiteBridge.query("DELETE FROM MyChunks WHERE world = '"+chunk.getWorld().getName()+"' AND x = "+chunk.getX()+" AND z = " + chunk.getZ());
     	
+    	// Correct way of unclaiming chunks
     	new MyChunkChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ()).unclaim();
     }
     
