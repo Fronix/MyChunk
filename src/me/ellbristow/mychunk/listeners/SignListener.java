@@ -1312,6 +1312,8 @@ public class SignListener implements Listener {
             Block block = event.getBlock();
             MyChunkChunk chunk = new MyChunkChunk(block);
             Player player = event.getPlayer();
+            
+         if(!WorldGuardHook.isRegion(block.getLocation())){
 
             if (chunk.isClaimed()) {
 
@@ -1340,6 +1342,8 @@ public class SignListener implements Listener {
                 }
 
             }
+            
+         }
 
         }
 
