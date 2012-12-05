@@ -149,6 +149,9 @@ public class MyChunkChunk {
         if (above.getTypeId()==50) {
             above.setTypeId(0);
         }
+        
+        // Regenerate chunk
+        Bukkit.getWorld(chunkWorld).regenerateChunk(getX(), getZ());
     }
     
     /**
