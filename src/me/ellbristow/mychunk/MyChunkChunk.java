@@ -29,13 +29,25 @@ public class MyChunkChunk {
     private boolean allowMobs;
     private long lastActive;
     
+    /**
+     * Return MyChunkChunk from block.
+     * 
+     * @param block - Block in wanted chunk.
+     */
     public MyChunkChunk (Block block) {
         chunk = block.getChunk();
         getFromChunk(chunk);
     }
     
-    public MyChunkChunk (String world, int x, int y) {
-        chunk = Bukkit.getServer().getWorld(world).getChunkAt(x, y);
+    /**
+     * Return MyChunkChunk from coordinates.
+     * 
+     * @param world - Worldname
+     * @param x - X coordinate
+     * @param z - Z coordinate
+     */
+    public MyChunkChunk (String world, int x, int z) {
+        chunk = Bukkit.getServer().getWorld(world).getChunkAt(x, z);
         getFromChunk(chunk);
     }
     
@@ -871,7 +883,9 @@ public class MyChunkChunk {
      * @param chunk Chunk to be unclaimed
      */
     public static void unclaim(Chunk chunk) {
-        SQLiteBridge.query("DELETE FROM MyChunks WHERE world = '"+chunk.getWorld().getName()+"' AND x = "+chunk.getX()+" AND z = " + chunk.getZ());
+//        SQLiteBridge.query("DELETE FROM MyChunks WHERE world = '"+chunk.getWorld().getName()+"' AND x = "+chunk.getX()+" AND z = " + chunk.getZ());
+    	
+    	new MyChunkChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ()).unclaim();
     }
     
 }
